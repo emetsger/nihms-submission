@@ -100,7 +100,8 @@ public class NihmsAssembler implements Assembler {
         String result = name
                 .chars()
                 .filter(NihmsAssembler::isValidChar)
-                .mapToObj(c -> Character.toString((char)c))
+                .mapToObj(String::valueOf)
+//                .mapToObj(c -> Character.toString((char)c))
                 .collect(Collectors.joining());
 
         return result;
