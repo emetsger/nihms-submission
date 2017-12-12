@@ -43,4 +43,28 @@ public class NihmsSubmissionAppTest {
         assertEquals(expectedValue, resolved.get(expectedKey));
     }
 
+    @Test
+    public void parseDockerHostAddressFromTcpUrl() throws Exception {
+        assertEquals("foo", NihmsSubmissionApp.parseDockerHostAddress("tcp://foo:2345"));
+    }
+
+    @Test
+    public void parseDockerHostAddressFromTcpUrlTrailingSlash() throws Exception {
+        assertEquals("foo", NihmsSubmissionApp.parseDockerHostAddress("tcp://foo:2345/"));
+    }
+
+    @Test
+    public void parseDockerHostAddressFromTcpUrlNoPort() throws Exception {
+        assertEquals("foo", NihmsSubmissionApp.parseDockerHostAddress("tcp://foo"));
+    }
+
+    @Test
+    public void parseDockerHostAddressFromTcpUrlNoPortTrailingSlash() throws Exception {
+        assertEquals("foo", NihmsSubmissionApp.parseDockerHostAddress("tcp://foo/"));
+    }
+
+    @Test
+    public void parseDockerHostAddressNotUrl() throws Exception {
+        assertEquals("foo", NihmsSubmissionApp.parseDockerHostAddress("foo"));
+    }
 }

@@ -117,20 +117,7 @@ public class NihmsSubmissionApp {
                 }
                 if ("local".equals(transportKey)) {
                     String localFtpHost;
-                    if ((localFtpHost = System.getenv(DOCKER_HOST_ADDRESS_KEY)) == null) {
-                        localFtpHost = System.getProperty(DOCKER_HOST_ADDRESS_KEY, "localhost");
-                    } else {
-                        String envVar = System.getenv(DOCKER_HOST_ADDRESS_KEY);
-                        if (envVar.startsWith("tcp://")) {
-                            if (envVar.lastIndexOf(":") < 4 ) {
-                                localFtpHost = envVar.substring("tcp://".length());
-                            }
-                            localFtpHost = envVar.substring("tcp://".length(), envVar.lastIndexOf(":"));
-                        } else {
-                            throw new RuntimeException(format(BAD_DOCKER_HOST,
-                                    DOCKER_HOST_ADDRESS_KEY, envVar, DOCKER_HOST_ADDRESS_KEY));
-                        }
-                    }
+                    localFtpHost = parseDockerHostAddress(System.getenv(DOCKER_HOST_ADDRESS_KEY));
 
                     LOG.debug(format(SETTING_TRANSPORT_HINT, transportKey, TRANSPORT_SERVER_FQDN, localFtpHost));
                     transportProperties.put(TRANSPORT_SERVER_FQDN, localFtpHost);
@@ -147,6 +134,53 @@ public class NihmsSubmissionApp {
         }
 
         return ((Map<String, String>) (Map) transportProperties);
+    }
+
+    /**
+     * Interpret and parse (if necessary) the supplied {@code dockerHost}.
+     * <p>
+     * If {@code dockerHost} is {@code null}, then look up the system property key {@link #DOCKER_HOST_ADDRESS_KEY}.  If the value isn't found, default to {@code localhost}
+     * </p>
+     * <p>
+     * If {@code dockerHost} is not {@code null}, and starts with {@code tcp://}, parse the value from
+     * the string.  The following encodings are supported:
+     * </p>
+     * <dl>
+     *   <dt>tcp://&lt;hostname>:&lt;port></dt>
+     *   <dd>tcp://localhost:2374</dd>
+     *   <dt>tcp://&lt;hostname>:&lt;port>/</dt>
+     *   <dd>tcp://localhost:2374/</dd>
+     *   <dt>tcp://&lt;hostname></dt>
+     *   <dd>tcp://localhost</dd>
+     *   <dt>tcp://&lt;hostname>/</dt>
+     *   <dd>tcp://localhost/</dd>
+     * </dl>
+     * <p>
+     * If {@code dockerHost} is not {@code null} and <em>does not</em> start with {@code tcp://}, the
+     * value is returned as-is
+     * </p>
+     *
+     * @param dockerHost
+     * @return
+     */
+    static String parseDockerHostAddress(String dockerHost) {
+        String localFtpHost = dockerHost; // default return value is the same as the passed in value
+        if (dockerHost == null) {
+            localFtpHost = System.getProperty(DOCKER_HOST_ADDRESS_KEY, "localhost");
+        } else {
+            if (dockerHost.startsWith("tcp://")) {
+                if (dockerHost.lastIndexOf(":") < 4 ) { // no port
+                    if (!dockerHost.endsWith("/")) {
+                        localFtpHost = dockerHost.substring("tcp://".length());
+                    } else {
+                        localFtpHost = dockerHost.substring("tcp://".length(), dockerHost.length() - 1);
+                    }
+                } else { // contains port
+                    localFtpHost = dockerHost.substring("tcp://".length(), dockerHost.lastIndexOf(":"));
+                }
+            }
+        }
+        return localFtpHost;
     }
 
 }
