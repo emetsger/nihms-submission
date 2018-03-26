@@ -38,6 +38,7 @@
         <module>nihms-integration</module>
         <module>nihms-util</module>
         <module>nihms-cli</module>
+        <module>sword2-transport</module>
     </modules>
 
     <profiles>
