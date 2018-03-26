@@ -16,6 +16,9 @@
 
 package org.dataconservancy.nihms.transport;
 
+import org.dataconservancy.nihms.assembler.PackageStream;
+
+import java.io.InputStream;
 import java.util.Map;
 
 /**
@@ -26,35 +29,52 @@ public interface Transport {
     String TRANSPORT_SERVERID = "nihms.transport.serverid";
 
     /**
-     * Property key that carries the user name used for authentication when using {@link AUTHMODE#userpass}.
+     * Property key carrying the user name used for authentication when using {@link AUTHMODE#userpass}.
      */
     String TRANSPORT_USERNAME = "nihms.transport.username";
 
     /**
-     * Property key that carries the password used for authentication when using {@link AUTHMODE#userpass}.
+     * Property key carrying the password used for authentication when using {@link AUTHMODE#userpass}.
      */
     String TRANSPORT_PASSWORD = "nihms.transport.password";
 
     /**
-     * Property key that identifies the mode of authentication, the {@link Enum#name} form of {@link AUTHMODE}.
+     * Property key identifying the mode of authentication; value encoded as the {@link Enum#name} form of {@link AUTHMODE}.
      */
     String TRANSPORT_AUTHMODE = "nihms.transport.authmode";
 
     /**
-     * Property key that identifies the protocol used for transport, the {@link Enum#name} form of {@link PROTOCOL}.
+     * Property key identifying the protocol used for transport, value encoded as the {@link Enum#name} form of {@link PROTOCOL}.
      */
     String TRANSPORT_PROTOCOL = "nihms.transport.protocol";
 
     /**
-     * Property key that identifies the fully qualified domain name or IP address of the server to connect to for
+     * Property key identifying the fully qualified domain name or IP address of the server to connect to for
      * depositing packages or files to.
      */
     String TRANSPORT_SERVER_FQDN = "nihms.transport.server-fqdn";
 
     /**
-     * Property key that identifies the port of the server to connect to for depositing packages or files to.
+     * Property key identifying the port of the server to connect to for depositing packages or files to.
      */
     String TRANSPORT_SERVER_PORT = "nihms.transport.server-port";
+
+    /**
+     * Property key identifying the mime type of the {@code InputStream} being deposited by
+     * {@link TransportSession#send(String, InputStream)} and {@link TransportSession#send(String, Map, InputStream)}.
+     * <em>N.B.</em>: The preferred form of obtaining the name of the {@code InputStream} would be
+     * {@link PackageStream.Metadata#name()}.
+     */
+    String TRANSPORT_MIME_TYPE = "deposit.transport.mime-type";
+
+    /**
+     * Property key identifying the packaging spect of the {@code InputStream} being deposited by {@link
+     * TransportSession#send(String, InputStream)} and {@link TransportSession#send(String, Map, InputStream)}.
+     * <em>N.B.</em>: The preferred form of obtaining the packaging specification of the {@code InputStream} would
+     * be {@link PackageStream.Metadata#spec()}.
+     */
+    String TRANSPORT_PACKAGE_SPEC = "deposit.transport.package-spec";
+
 
     enum AUTHMODE {
 
@@ -79,7 +99,8 @@ public interface Transport {
     enum PROTOCOL {
         http,
         https,
-        ftp
+        ftp,
+        swordv2
     }
 
     TransportSession open(Map<String, String> hints);
