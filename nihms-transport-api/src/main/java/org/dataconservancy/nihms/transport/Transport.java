@@ -25,16 +25,35 @@ public interface Transport {
 
     String TRANSPORT_SERVERID = "nihms.transport.serverid";
 
+    /**
+     * Property key that carries the user name used for authentication when using {@link AUTHMODE#userpass}.
+     */
     String TRANSPORT_USERNAME = "nihms.transport.username";
 
+    /**
+     * Property key that carries the password used for authentication when using {@link AUTHMODE#userpass}.
+     */
     String TRANSPORT_PASSWORD = "nihms.transport.password";
 
+    /**
+     * Property key that identifies the mode of authentication, the {@link Enum#name} form of {@link AUTHMODE}.
+     */
     String TRANSPORT_AUTHMODE = "nihms.transport.authmode";
 
+    /**
+     * Property key that identifies the protocol used for transport, the {@link Enum#name} form of {@link PROTOCOL}.
+     */
     String TRANSPORT_PROTOCOL = "nihms.transport.protocol";
 
+    /**
+     * Property key that identifies the fully qualified domain name or IP address of the server to connect to for
+     * depositing packages or files to.
+     */
     String TRANSPORT_SERVER_FQDN = "nihms.transport.server-fqdn";
 
+    /**
+     * Property key that identifies the port of the server to connect to for depositing packages or files to.
+     */
     String TRANSPORT_SERVER_PORT = "nihms.transport.server-port";
 
     enum AUTHMODE {
