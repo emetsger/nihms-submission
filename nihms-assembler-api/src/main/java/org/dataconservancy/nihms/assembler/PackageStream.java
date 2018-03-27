@@ -215,7 +215,7 @@ public interface PackageStream {
          *
          * @return the checksum value, according to the {@link #algorithm()}
          */
-        byte value();
+        byte[] value();
 
         /**
          * The value of the checksum, encoded as base64
