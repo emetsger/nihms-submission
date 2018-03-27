@@ -16,15 +16,26 @@
 package org.dataconservancy.pass.deposit.transport.sword2;
 
 import org.dataconservancy.nihms.transport.TransportResponse;
+import org.swordapp.client.DepositReceipt;
 
 /**
  * @author Elliot Metsger (emetsger@jhu.edu)
  */
-public class Sword2TransportResponse implements TransportResponse {
+public class Sword2DepositReceiptResponse implements TransportResponse {
 
+    private DepositReceipt receipt;
+
+    public Sword2DepositReceiptResponse(DepositReceipt receipt) {
+        if (receipt == null) {
+            throw new IllegalArgumentException("Deposit receipt must not be null.");
+        }
+        this.receipt = receipt;
+    }
+
+    // TODO: return true if *accepted* but will need to be polled for success
     @Override
     public boolean success() {
-        return false;
+        return receipt.getStatusCode() > 199 && receipt.getStatusCode() < 300;
     }
 
     @Override
