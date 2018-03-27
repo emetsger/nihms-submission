@@ -78,6 +78,27 @@ public interface Transport {
      */
     String TRANSPORT_PACKAGE_SPEC = "deposit.transport.package-spec";
 
+    /**
+     * Property key identifying the base64 encoded checksum of the {@code InputStream} being deposited by {@link
+     * TransportSession#send(PackageStream, Map)}.  <em>N.B.</em>: The preferred form of obtaining the checksum of the
+     * {@code InputStream} would be {@link PackageStream.Metadata#checksums()}.
+     */
+    String TRANSPORT_CHECKSUM_SHA256 = "deposit.transport.checksum.sha256";
+
+    /**
+     * Property key identifying the base64 encoded checksum of the {@code InputStream} being deposited by {@link
+     * TransportSession#send(PackageStream, Map)}.  <em>N.B.</em>: The preferred form of obtaining the checksum of the
+     * {@code InputStream} would be {@link PackageStream.Metadata#checksums()}.
+     */
+    String TRANSPORT_CHECKSUM_SHA512 = "deposit.transport.checksum.sha512";
+
+    /**
+     * Property key identifying the base64 encoded checksum of the {@code InputStream} being deposited by {@link
+     * TransportSession#send(PackageStream, Map)}.  <em>N.B.</em>: The preferred form of obtaining the checksum of the
+     * {@code InputStream} would be {@link PackageStream.Metadata#checksums()}.
+     */
+    String TRANSPORT_CHECKSUM_MD5 = "deposit.transport.checksum.md5";
+
 
     enum AUTHMODE {
 
