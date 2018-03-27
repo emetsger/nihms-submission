@@ -25,4 +25,9 @@ public interface Sword2TransportHints {
      */
     String SWORD_SERVICE_DOC_URL = "deposit.transport.sword.service-doc";
 
+    /**
+     * Property identifying the On-Behalf-Of user
+     */
+    String SWORD_ON_BEHALF_OF_USER = "deposit.transport.sword.on-behalf-of";
+
 }
