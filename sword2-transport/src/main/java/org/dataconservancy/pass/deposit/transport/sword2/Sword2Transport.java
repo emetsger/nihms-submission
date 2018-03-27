@@ -25,13 +25,14 @@ import org.swordapp.client.ServiceDocument;
 
 import java.util.Map;
 
-import static org.dataconservancy.nihms.transport.Transport.TRANSPORT_PASSWORD;
-import static org.dataconservancy.nihms.transport.Transport.TRANSPORT_USERNAME;
+import static org.dataconservancy.pass.deposit.transport.sword2.Sword2TransportHints.SWORD_SERVICE_DOC_URL;
 
 /**
  * @author Elliot Metsger (emetsger@jhu.edu)
  */
 public class Sword2Transport implements Transport {
+
+    private static final String MISSING_REQUIRED_HINT = "Missing required transport hint '%s'";
 
     private Sword2ClientFactory clientFactory;
 
@@ -60,15 +61,32 @@ public class Sword2Transport implements Transport {
                     " (was: '" + hints.get(TRANSPORT_AUTHMODE) + "'");
         }
 
+        if (hints.get(TRANSPORT_USERNAME) == null || hints.get(TRANSPORT_USERNAME).trim().length() == 0) {
+            throw new RuntimeException(String.format(MISSING_REQUIRED_HINT, TRANSPORT_USERNAME));
+        }
+
+        if (hints.get(TRANSPORT_PASSWORD) == null || hints.get(TRANSPORT_PASSWORD).trim().length() == 0) {
+            throw new RuntimeException(String.format(MISSING_REQUIRED_HINT, TRANSPORT_PASSWORD));
+        }
+
         ServiceDocument serviceDocument = null;
+        AuthCredentials authCreds = null;
         try {
-            serviceDocument = client.getServiceDocument(serviceDocUrl,
-                    new AuthCredentials(hints.get(TRANSPORT_USERNAME), hints.get(TRANSPORT_PASSWORD)));
+            if (hints.containsKey(Sword2TransportHints.SWORD_ON_BEHALF_OF_USER) &&
+                    (hints.get(Sword2TransportHints.SWORD_ON_BEHALF_OF_USER) != null) &&
+                    (hints.get(Sword2TransportHints.SWORD_ON_BEHALF_OF_USER).trim().length() > 0)) {
+                authCreds = new AuthCredentials(hints.get(TRANSPORT_USERNAME), hints.get(TRANSPORT_PASSWORD),
+                        hints.get(Sword2TransportHints.SWORD_ON_BEHALF_OF_USER));
+            } else {
+                authCreds = new AuthCredentials(hints.get(TRANSPORT_USERNAME), hints.get(TRANSPORT_PASSWORD));
+            }
+
+            serviceDocument = client.getServiceDocument(serviceDocUrl, authCreds);
         } catch (SWORDClientException|ProtocolViolationException e) {
             throw new RuntimeException(e.getMessage(), e);
         }
 
-        return new Sword2TransportSession(client, serviceDocument);
+        return new Sword2TransportSession(client, serviceDocument, authCreds);
     }
 
     /**
@@ -79,17 +97,10 @@ public class Sword2Transport implements Transport {
      * @throws RuntimeException if the hints do not contain the service document url
      */
     private String getServiceDocUrl(Map<String, String> hints) {
-        if (!hints.containsKey(Sword2TransportHints.SWORD_SERVICE_DOC_URL)) {
-            throw new RuntimeException("SWORD transport hints does not contain a Service Document URL!");
+        if (hints.get(SWORD_SERVICE_DOC_URL) == null || hints.get(SWORD_SERVICE_DOC_URL).trim().length() == 0) {
+            throw new RuntimeException(String.format(MISSING_REQUIRED_HINT, SWORD_SERVICE_DOC_URL));
         }
 
-        String serviceDocUrl = hints.get(Sword2TransportHints.SWORD_SERVICE_DOC_URL);
-        if (serviceDocUrl == null || serviceDocUrl.trim().length() == 0) {
-            throw new RuntimeException("SWORD transport hints contained a null or empty string for the Service " +
-                    "Document URL (check the value of property key '" + Sword2TransportHints.SWORD_SERVICE_DOC_URL +
-                    "'");
-        }
-
-        return serviceDocUrl;
+        return hints.get(SWORD_SERVICE_DOC_URL);
     }
 }
