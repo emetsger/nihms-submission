@@ -19,7 +19,15 @@ import org.dataconservancy.nihms.transport.TransportResponse;
 import org.swordapp.client.DepositReceipt;
 
 /**
+ * Implements a {@link TransportResponse} composed by a {@link DepositReceipt SWORD v2 Deposit Reciept}.  Specifically
+ * this class will consider a SWORD v2 deposit successful if the receipt reports that the deposit was <em>accepted</em>
+ * by the remote system (i.e. an http response code in the range {@code 200}-{@code 299}).  Other components of the
+ * system will be responsible for polling the {@code atom:link} that references the SWORD Statement for the
+ * ultimate deposit status.
+ *
  * @author Elliot Metsger (emetsger@jhu.edu)
+ * @see <a href="http://swordapp.github.io/SWORDv2-Profile/SWORDProfile.html#depositreceipt">SWORD v2 Profile: Deposit Receipt</a>
+ * @see <a href="http://swordapp.github.io/SWORDv2-Profile/SWORDProfile.html#statement">SWORD v2 Profile: Statement</a>
  */
 public class Sword2DepositReceiptResponse implements TransportResponse {
 
@@ -43,4 +51,7 @@ public class Sword2DepositReceiptResponse implements TransportResponse {
         return null;
     }
 
+    public DepositReceipt getReceipt() {
+        return receipt;
+    }
 }
