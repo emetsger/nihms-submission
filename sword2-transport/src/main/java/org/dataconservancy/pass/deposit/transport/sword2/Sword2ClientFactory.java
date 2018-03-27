@@ -15,14 +15,24 @@
  */
 package org.dataconservancy.pass.deposit.transport.sword2;
 
+import org.swordapp.client.SWORDClient;
+
+import java.util.Map;
+
 /**
+ * Creates, and optionally configures, {@link SWORDClient} instances for use.
+ *
  * @author Elliot Metsger (emetsger@jhu.edu)
  */
-public interface Sword2TransportHints {
+public interface Sword2ClientFactory {
 
     /**
-     * Property identifying the SWORD service document URL
+     * Create a new instance of a SWORD v2 client.  The supplied {@code hints} are used by the factory implementation
+     * to optionally configure the client.
+     *
+     * @param hints used to configure the SWORD client, may be {@code null}
+     * @return a new {@code SWORDClient} instance
      */
-    String SWORD_SERVICE_DOC_URL = "deposit.transport.sword.service-doc";
+    SWORDClient newInstance(Map<String, String> hints);
 
 }
