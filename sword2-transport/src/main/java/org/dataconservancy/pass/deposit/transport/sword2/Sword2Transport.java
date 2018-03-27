@@ -47,6 +47,8 @@ public class Sword2Transport implements Transport {
      * Hints must carry:
      * <ul>
      *     <li>Service document URL</li>
+     *     <li>Username and pass for retrieving service doc</li>
+     *     <li>on-behalf-of user</li>
      * </ul>
      * @param hints
      * @return
