@@ -15,6 +15,7 @@
  */
 package org.dataconservancy.pass.deposit.transport.sword2;
 
+import org.dataconservancy.nihms.assembler.PackageStream;
 import org.dataconservancy.nihms.transport.TransportResponse;
 import org.dataconservancy.nihms.transport.TransportSession;
 import org.swordapp.client.SWORDClient;
@@ -40,14 +41,6 @@ public class Sword2TransportSession implements TransportSession {
         this.serviceDocument = serviceDocument;
     }
 
-    @Override
-    public TransportResponse send(String destinationResource, InputStream content) {
-        if (closed) {
-            throw new IllegalStateException("SWORDv2 transport session has been closed.");
-        }
-        return null;
-    }
-
     /**
      * <pre>
      * // Collection URI?  How does the client select the collection?  Hard-coded property?  Why would all submissions
@@ -63,14 +56,13 @@ public class Sword2TransportSession implements TransportSession {
      * deposit.setSuggestedIdentifier("abcdefg"); // ??
      * </pre>
      *
-     * @param destinationResource
+     * @param packageStream
      * @param metadata
-     * @param content
      * @return
      * @throws IllegalStateException if this session has been {@link #close() closed}
      */
     @Override
-    public TransportResponse send(String destinationResource, Map<String, String> metadata, InputStream content) {
+    public TransportResponse send(PackageStream packageStream, Map<String, String> metadata) {
         if (closed) {
             throw new IllegalStateException("SWORDv2 transport session has been closed.");
         }
