@@ -54,6 +54,13 @@
 
         <dependency>
             <groupId>org.dataconservancy.nihms</groupId>
+            <artifactId>sword2-transport</artifactId>
+            <version>${project.parent.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.dataconservancy.nihms</groupId>
             <artifactId>nihms-cli</artifactId>
             <version>${project.parent.version}</version>
             <scope>test</scope>
