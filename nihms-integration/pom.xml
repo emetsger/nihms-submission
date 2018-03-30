@@ -133,6 +133,22 @@
                                 </ports>
                             </run>
                         </image>
+                        <!--<image>-->
+                            <!--<alias>dspace</alias>-->
+                            <!--<name>oapass/dspace:latest</name>-->
+                            <!--<run>-->
+                                <!--<wait>-->
+                                    <!--<url>http://${docker.host.address}:8181/xmlui</url>-->
+                                <!--</wait>-->
+                            <!--</run>-->
+                        <!--</image>-->
+                        <!--<image>-->
+                            <!--<alias>postgres</alias>-->
+                            <!--<name>oapass/postgres:latest</name>-->
+                            <!--<wait>-->
+                                <!--<time>6000</time>-->
+                            <!--</wait>-->
+                        <!--</image>-->
                     </images>
                 </configuration>
                 <executions>

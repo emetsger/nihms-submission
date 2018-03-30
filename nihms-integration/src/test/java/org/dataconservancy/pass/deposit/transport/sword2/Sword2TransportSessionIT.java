@@ -17,7 +17,6 @@
 package org.dataconservancy.pass.deposit.transport.sword2;
 
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.io.IOUtils;
 import org.dataconservancy.nihms.assembler.PackageStream;
 import org.dataconservancy.nihms.integration.BaseIT;
 import org.junit.Test;
@@ -26,12 +25,18 @@ import org.swordapp.client.ClientConfiguration;
 import org.swordapp.client.SWORDClient;
 import org.swordapp.client.ServiceDocument;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.apache.commons.codec.binary.Base64.encodeBase64String;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -41,12 +46,17 @@ public class Sword2TransportSessionIT extends BaseIT {
 
     private static final String DSPACE_ADMIN_PASSWORD = "foobar";
 
-    private static final String PACKAGE_CONTENT = "This is a package!";
+    private static final String PACKAGE_RESOURCE = "simplezippackage.zip";
 
-    private static final String SERVICEDOC_ENDPOINT = "http://192.168.99.100/swordv2/servicedocument";
+    private static final String SERVICEDOC_ENDPOINT = "http://192.168.99.100:8181/swordv2/servicedocument";
 
     @Test
     public void testSimple() throws Exception {
+        File samplePackage = new File(this.getClass().getResource(PACKAGE_RESOURCE).getPath());
+        assertNotNull(samplePackage);
+        assertTrue("Missing sample package; cannot resolve '" + PACKAGE_RESOURCE + "' as a class path resource.",
+                samplePackage.exists());
+
         ClientConfiguration swordConfig = new ClientConfiguration();
         swordConfig.setReturnDepositReceipt(true);
         swordConfig.setUserAgent("oapass/SWORDv2");
@@ -55,23 +65,30 @@ public class Sword2TransportSessionIT extends BaseIT {
 
         SWORDClient swordClient = new SWORDClient(swordConfig);
 
-        ServiceDocument serviceDoc = swordClient.getServiceDocument(SERVICEDOC_ENDPOINT, authCreds);
-        assertNotNull(serviceDoc);
+        ServiceDocument serviceDoc = null;
+        try {
+            serviceDoc = swordClient.getServiceDocument(SERVICEDOC_ENDPOINT, authCreds);
+            assertNotNull(serviceDoc);
+        } catch (Exception e) {
+            String msg = String.format("Failed to connect to %s: %s", SERVICEDOC_ENDPOINT, e.getMessage());
+            LOG.error(msg, e);
+            fail(msg);
+        }
 
         PackageStream.Metadata md = mock(PackageStream.Metadata.class);
         PackageStream packageStream = mock(PackageStream.class);
 
-        when(packageStream.open()).thenReturn(IOUtils.toInputStream(PACKAGE_CONTENT, "UFT-8"));
+        when(packageStream.open()).thenReturn(new FileInputStream(samplePackage));
         when(packageStream.metadata()).thenReturn(md);
-        when(md.name()).thenReturn("MyPackage.txt");
+        when(md.name()).thenReturn(samplePackage.getName());
         when(md.spec()).thenReturn("http://purl.org/net/sword/package/SimpleZip");
-        when(md.archive()).thenReturn(PackageStream.ARCHIVE.NONE);
-        when(md.archived()).thenReturn(false);
-        when(md.compression()).thenReturn(PackageStream.COMPRESSION.NONE);
-        when(md.compressed()).thenReturn(false);
-        when(md.sizeBytes()).thenReturn((long) PACKAGE_CONTENT.getBytes().length);
-        when(md.mimeType()).thenReturn("text/plain");
-        when(md.checksum()).thenAnswer(inv -> new PackageStream.Checksum() {
+        when(md.archive()).thenReturn(PackageStream.ARCHIVE.ZIP);
+        when(md.archived()).thenReturn(true);
+        when(md.compression()).thenReturn(PackageStream.COMPRESSION.ZIP);
+        when(md.compressed()).thenReturn(true);
+        when(md.sizeBytes()).thenReturn(samplePackage.length());
+        when(md.mimeType()).thenReturn("application/zip");
+        final PackageStream.Checksum md5 = new PackageStream.Checksum() {
             @Override
             public PackageStream.Algo algorithm() {
                 return PackageStream.Algo.MD5;
@@ -81,7 +98,7 @@ public class Sword2TransportSessionIT extends BaseIT {
             public byte[] value() {
                 try {
                     MessageDigest digest = MessageDigest.getInstance("MD5");
-                    return DigestUtils.digest(digest, IOUtils.toInputStream(PACKAGE_CONTENT, "UFT-8"));
+                    return DigestUtils.digest(digest, new FileInputStream(samplePackage));
                 } catch (Exception e) {
                     throw new RuntimeException(e.getMessage(), e);
                 }
@@ -89,13 +106,36 @@ public class Sword2TransportSessionIT extends BaseIT {
 
             @Override
             public String asBase64() {
-                return encodeBase64String(value());
+                String base64 = encodeBase64String(value());
+                LOG.debug(">>>> base64 encoded md5 digest: '{}'", base64);
+                return base64;
             }
-        });
+
+            @Override
+            public String asHex() {
+                String hex = null;
+                try {
+                    hex = DigestUtils.md5Hex(new FileInputStream(samplePackage));
+                } catch (IOException e) {
+                    throw new RuntimeException("Error calculating the MD5 checksum for '" + samplePackage.getPath() +
+                            "'");
+                }
+                LOG.debug(">>>> hex encoded md5 digest: '{}'", hex);
+                return hex;
+            }
+        };
+        when(md.checksum()).thenReturn(md5);
+        when(md.checksums()).thenReturn(Collections.singletonList(md5));
 
         Sword2TransportSession underTest = new Sword2TransportSession(swordClient, serviceDoc, authCreds);
 
-//        underTest.send(packageStream, )
+        Map<String, String> transportMd = new HashMap<>();
+        transportMd.put(Sword2TransportHints.SWORD_COLLECTION_URL,
+                "http://192.168.99.100:8181/swordv2/collection/123456789/2");
 
+        Sword2DepositReceiptResponse response = underTest.send(packageStream, transportMd);
+        assertNotNull(response);
+        assertTrue(response.success());
+        assertNotNull(response.getReceipt());
     }
 }
