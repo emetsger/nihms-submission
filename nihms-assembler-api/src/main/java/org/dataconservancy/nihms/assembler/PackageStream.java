@@ -224,6 +224,11 @@ public interface PackageStream {
          */
         String asBase64();
 
+        /**
+         * The value of the checksum, encoded as hexadecimal
+         */
+        String asHex();
+
     }
 
     /**
