@@ -97,7 +97,7 @@ public class Sword2TransportSession implements TransportSession {
      * @see <a href="http://swordapp.github.io/SWORDv2-Profile/SWORDProfile.html#protocoloperations_creatingresource_binary">SWORD v2 Profile</a>
      */
     @Override
-    public TransportResponse send(PackageStream packageStream, Map<String, String> metadata) {
+    public Sword2DepositReceiptResponse send(PackageStream packageStream, Map<String, String> metadata) {
         if (closed) {
             throw new IllegalStateException("SWORDv2 transport session has been closed.");
         }
