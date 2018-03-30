@@ -127,7 +127,7 @@ public class Sword2TransportSession implements TransportSession {
                 .checksums()
                 .stream()
                 .filter(sum -> PackageStream.Algo.MD5 == sum.algorithm())
-                .findFirst().ifPresent(md5 -> swordDeposit.setMd5(md5.asBase64()));
+                .findFirst().ifPresent(md5 -> swordDeposit.setMd5(md5.asHex()));
 
         if (swordDeposit.getMd5() == null) {
             LOG.warn(String.format(WARN_MISSING_SHOULD, "Content-MD5", SPEC_URL_CREATING_SWORD_BINARY));
