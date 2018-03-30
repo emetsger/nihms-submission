@@ -26,6 +26,11 @@ public interface Sword2TransportHints {
     String SWORD_SERVICE_DOC_URL = "deposit.transport.sword.service-doc";
 
     /**
+     * Property identifying the Atom Publishing Protocol Collection to deposit the package to
+     */
+    String SWORD_COLLECTION_URL = "deposit.transport.sword.target-collection";
+
+    /**
      * Property identifying the On-Behalf-Of user
      */
     String SWORD_ON_BEHALF_OF_USER = "deposit.transport.sword.on-behalf-of";
