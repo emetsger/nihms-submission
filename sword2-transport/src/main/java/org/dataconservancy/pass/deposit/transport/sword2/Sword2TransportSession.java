@@ -15,6 +15,7 @@
  */
 package org.dataconservancy.pass.deposit.transport.sword2;
 
+import org.apache.abdera.model.Workspace;
 import org.dataconservancy.nihms.assembler.PackageStream;
 import org.dataconservancy.nihms.transport.TransportResponse;
 import org.dataconservancy.nihms.transport.TransportSession;
@@ -151,11 +152,14 @@ public class Sword2TransportSession implements TransportSession {
 
         try (InputStream stream = packageStream.open()) {
             swordDeposit.setFile(stream);
-            receipt = client.deposit(selectCollection(serviceDocument, metadata), swordDeposit, authCreds);
+            receipt = client.deposit(selectCollection(serviceDocument, packageStream.metadata(), metadata),
+                    swordDeposit, authCreds);
         } catch (IOException e) {
             throw new RuntimeException("Error closing PackageStream: " + e.getMessage(), e);
         } catch (ProtocolViolationException|SWORDClientException|SWORDError e) {
-            throw new RuntimeException("Error depositing SWORD package to '" + selectCollection(serviceDocument, metadata).getHref().toASCIIString() + "': " + e.getMessage(), e);
+            throw new RuntimeException("Error depositing SWORD package to '" +
+                    selectCollection(serviceDocument, packageStream.metadata(), metadata).getHref().toASCIIString() +
+                    "': " + e.getMessage(), e);
         }
 
         return new Sword2DepositReceiptResponse(receipt);
@@ -183,8 +187,22 @@ public class Sword2TransportSession implements TransportSession {
      * @param metadata
      * @return
      */
-    SWORDCollection selectCollection(ServiceDocument serviceDoc, Map<String, String> metadata) {
-        // return the Collection that the package should be deposited to
-        return null;
+    SWORDCollection selectCollection(ServiceDocument serviceDoc, PackageStream.Metadata packageMetadata,
+                                     Map<String, String> metadata) {
+        String collectionUrl = metadata.get(Sword2TransportHints.SWORD_COLLECTION_URL);
+
+        if (collectionUrl == null || collectionUrl.trim().length() == 0) {
+            throw new RuntimeException("Missing required transport hint '" + Sword2TransportHints
+                    .SWORD_COLLECTION_URL + "'");
+        }
+
+        SWORDCollection collection = serviceDoc.getWorkspaces()
+                .stream()
+                .flatMap(workspace -> workspace.getCollections().stream())
+                .filter(collectionCandidate -> collectionCandidate.getHref().toString().equals(collectionUrl))
+                .findAny()
+                .orElseThrow(() -> new RuntimeException("SWORD Collection with '" + collectionUrl + "' not found."));
+
+        return collection;
     }
 }
