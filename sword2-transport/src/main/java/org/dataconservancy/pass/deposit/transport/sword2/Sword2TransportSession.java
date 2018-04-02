@@ -15,7 +15,6 @@
  */
 package org.dataconservancy.pass.deposit.transport.sword2;
 
-import org.apache.abdera.model.Workspace;
 import org.dataconservancy.nihms.assembler.PackageStream;
 import org.dataconservancy.nihms.transport.TransportResponse;
 import org.dataconservancy.nihms.transport.TransportSession;
@@ -33,9 +32,7 @@ import org.swordapp.client.ServiceDocument;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Base64;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * @author Elliot Metsger (emetsger@jhu.edu)
@@ -98,7 +95,7 @@ public class Sword2TransportSession implements TransportSession {
      * @see <a href="http://swordapp.github.io/SWORDv2-Profile/SWORDProfile.html#protocoloperations_creatingresource_binary">SWORD v2 Profile</a>
      */
     @Override
-    public Sword2DepositReceiptResponse send(PackageStream packageStream, Map<String, String> metadata) {
+    public TransportResponse send(PackageStream packageStream, Map<String, String> metadata) {
         if (closed) {
             throw new IllegalStateException("SWORDv2 transport session has been closed.");
         }
@@ -154,12 +151,16 @@ public class Sword2TransportSession implements TransportSession {
             swordDeposit.setFile(stream);
             receipt = client.deposit(selectCollection(serviceDocument, packageStream.metadata(), metadata),
                     swordDeposit, authCreds);
+        } catch (SWORDError e) {
+            return new Sword2ErrorResponse(e);
+        } catch (ProtocolViolationException | InvalidCollectionUrl e) {
+            return new Sword2ThrowableResponse(e);
         } catch (IOException e) {
-            throw new RuntimeException("Error closing PackageStream: " + e.getMessage(), e);
-        } catch (ProtocolViolationException|SWORDClientException|SWORDError e) {
-            throw new RuntimeException("Error depositing SWORD package to '" +
+            return new Sword2ThrowableResponse(new RuntimeException("Error closing PackageStream: " + e.getMessage(), e));
+        } catch (SWORDClientException e) {
+            return new Sword2ThrowableResponse(new RuntimeException("Error depositing SWORD package to '" +
                     selectCollection(serviceDocument, packageStream.metadata(), metadata).getHref().toASCIIString() +
-                    "': " + e.getMessage(), e);
+                    "': " + e.getMessage(), e));
         }
 
         return new Sword2DepositReceiptResponse(receipt);
@@ -201,7 +202,8 @@ public class Sword2TransportSession implements TransportSession {
                 .flatMap(workspace -> workspace.getCollections().stream())
                 .filter(collectionCandidate -> collectionCandidate.getHref().toString().equals(collectionUrl))
                 .findAny()
-                .orElseThrow(() -> new RuntimeException("SWORD Collection with '" + collectionUrl + "' not found."));
+                .orElseThrow(() ->
+                        new InvalidCollectionUrl("SWORD Collection with URL '" + collectionUrl + "' not found."));
 
         return collection;
     }
