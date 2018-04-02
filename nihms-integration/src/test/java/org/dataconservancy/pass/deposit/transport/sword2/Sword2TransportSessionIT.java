@@ -346,7 +346,8 @@ public class Sword2TransportSessionIT extends BaseIT {
         ServiceDocument serviceDoc = null;
         try {
             serviceDoc = swordClient.getServiceDocument(serviceDocEndpoint, authCreds);
-            assertNotNull(serviceDoc);
+            assertNotNull("SWORD Service Document obtained from '" + serviceDocEndpoint + "' (auth creds: " +
+                    "'" + authCreds.getUsername() + "':'" + authCreds.getPassword() + "') was null.", serviceDoc);
         } catch (Exception e) {
             String msg = String.format("Failed to connect to %s: %s", serviceDocEndpoint, e.getMessage());
             LOG.error(msg, e);
