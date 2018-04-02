@@ -19,6 +19,7 @@ package org.dataconservancy.pass.deposit.transport.sword2;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.dataconservancy.nihms.assembler.PackageStream;
 import org.dataconservancy.nihms.integration.BaseIT;
+import org.dataconservancy.nihms.transport.TransportResponse;
 import org.junit.Before;
 import org.junit.Test;
 import org.swordapp.client.AuthCredentials;
@@ -36,6 +37,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.apache.commons.codec.binary.Base64.encodeBase64String;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -74,6 +76,11 @@ public class Sword2TransportSessionIT extends BaseIT {
      * FIXME: Hard-coded (for now) SWORD Service Document endpoint
      */
     private static final String SERVICEDOC_ENDPOINT = "http://192.168.99.100:8181/swordv2/servicedocument";
+
+    /**
+     * FIXME: Hard-coded (for now) SWORD Collection being deposited to
+     */
+    private static final String SWORD_COLLECTION_URL = "http://192.168.99.100:8181/swordv2/collection/123456789/2";
 
     /**
      * Configured SWORD client
@@ -115,8 +122,8 @@ public class Sword2TransportSessionIT extends BaseIT {
 
         sampleZipPackage = new File(this.getClass().getResource(SIMPLE_ZIP_PACKAGE_RESOURCE).getPath());
         assertNotNull(sampleZipPackage);
-        assertTrue("Missing sample package; cannot resolve '" + SIMPLE_ZIP_PACKAGE_RESOURCE + "' as a class path resource.",
-                sampleZipPackage.exists());
+        assertTrue("Missing sample package; cannot resolve '" + SIMPLE_ZIP_PACKAGE_RESOURCE +
+                        "' as a class path resource.", sampleZipPackage.exists());
 
 
         ClientConfiguration swordConfig = new ClientConfiguration();
@@ -143,12 +150,109 @@ public class Sword2TransportSessionIT extends BaseIT {
 
         Map<String, String> transportMd = new HashMap<>();
         transportMd.put(Sword2TransportHints.SWORD_COLLECTION_URL,
-                "http://192.168.99.100:8181/swordv2/collection/123456789/2");
+                SWORD_COLLECTION_URL);
 
-        Sword2DepositReceiptResponse response = underTest.send(packageStream, transportMd);
+        Sword2DepositReceiptResponse response = (Sword2DepositReceiptResponse)
+                underTest.send(packageStream, transportMd);
         assertNotNull(response);
         assertTrue(response.success());
         assertNotNull(response.getReceipt());
+    }
+
+    /**
+     * Purposefully supply an invalid checksum when depositing a package.  The response should indicate failure, and
+     * provide a Throwable that contains the {@link org.swordapp.client.SWORDError#errorBody error body}, with a message
+     * indicating a checksum failure.
+     */
+    @Test
+    public void testWithBadMd5Checksum() throws FileNotFoundException {
+        PackageStream.Metadata md = preparePackageMd(sampleZipPackage, SPEC_SIMPLE_ZIP, APPLICATION_ZIP);
+        PackageStream.Checksum invalidChecksum = new PackageStream.Checksum() {
+            @Override
+            public PackageStream.Algo algorithm() {
+                return PackageStream.Algo.MD5;
+            }
+
+            @Override
+            public byte[] value() {
+                return new byte[128];
+            }
+
+            @Override
+            public String asBase64() {
+                return encodeBase64String(value());
+            }
+
+            @Override
+            public String asHex() {
+                return DigestUtils.md5Hex("hello world!");
+            }
+        };
+        when(md.checksum()).thenReturn(invalidChecksum);
+        when(md.checksums()).thenReturn(Collections.singletonList(invalidChecksum));
+
+        PackageStream packageStream = preparePackageStream(md, sampleZipPackage);
+
+        Sword2TransportSession underTest = new Sword2TransportSession(swordClient, serviceDoc, authCreds);
+
+        Map<String, String> transportMd = new HashMap<>();
+        transportMd.put(Sword2TransportHints.SWORD_COLLECTION_URL,
+                SWORD_COLLECTION_URL);
+
+        TransportResponse response = underTest.send(packageStream, transportMd);
+
+        assertNotNull(response);
+        assertFalse(response.success());
+        assertNotNull(response.error());
+        assertTrue(response.error().getMessage().contains("MD5 checksum for the deposited file did not match"));
+    }
+
+    /**
+     * Purposefully supply an invalid packaging specification when depositing a package.  The response should indicate
+     * failure, and provide a Throwable that contains the {@link org.swordapp.client.SWORDError#errorBody error body},
+     * with a message indicating an invalid packaging spec was supplied.
+     */
+    @Test
+    public void testWithUnsupportedPackagingType() throws FileNotFoundException {
+        PackageStream.Metadata md = preparePackageMd(sampleZipPackage, SPEC_SIMPLE_ZIP, APPLICATION_ZIP);
+        when(md.spec()).thenReturn("http://invalid.spec/url");
+        PackageStream packageStream = preparePackageStream(md, sampleZipPackage);
+
+        Sword2TransportSession underTest = new Sword2TransportSession(swordClient, serviceDoc, authCreds);
+
+        Map<String, String> transportMd = new HashMap<>();
+        transportMd.put(Sword2TransportHints.SWORD_COLLECTION_URL,
+                SWORD_COLLECTION_URL);
+
+        TransportResponse response = underTest.send(packageStream, transportMd);
+
+        assertNotNull(response);
+        assertFalse(response.success());
+        assertNotNull(response.error());
+        assertTrue(response.error().getMessage().contains("Unacceptable packaging type in deposit request"));
+    }
+
+    /**
+     * Purposefully deposit to an invalid collection URL.  Response should indicate failure, and the cause of the
+     * failure should be an {@link InvalidCollectionUrl} exception.
+     */
+    @Test
+    public void testDepositToNonExistentCollectionUrl() throws FileNotFoundException {
+        PackageStream.Metadata md = preparePackageMd(sampleZipPackage, SPEC_SIMPLE_ZIP, APPLICATION_ZIP);
+        PackageStream packageStream = preparePackageStream(md, sampleZipPackage);
+
+        Sword2TransportSession underTest = new Sword2TransportSession(swordClient, serviceDoc, authCreds);
+        String invalidCollectionUrl = SWORD_COLLECTION_URL + "/123456";
+
+        Map<String, String> transportMd = new HashMap<>();
+        transportMd.put(Sword2TransportHints.SWORD_COLLECTION_URL, invalidCollectionUrl);
+
+        TransportResponse response = underTest.send(packageStream, transportMd);
+
+        assertNotNull(response);
+        assertFalse(response.success());
+        assertNotNull(response.error());
+        assertTrue(response.error() instanceof InvalidCollectionUrl);
     }
 
     /**
@@ -160,7 +264,8 @@ public class Sword2TransportSessionIT extends BaseIT {
      * @return
      * @throws FileNotFoundException
      */
-    private static PackageStream preparePackageStream(PackageStream.Metadata md, File packageFile) throws FileNotFoundException {
+    private static PackageStream preparePackageStream(PackageStream.Metadata md, File packageFile)
+            throws FileNotFoundException {
         PackageStream packageStream = mock(PackageStream.class);
 
         when(packageStream.open()).thenReturn(new FileInputStream(packageFile));
@@ -177,7 +282,8 @@ public class Sword2TransportSessionIT extends BaseIT {
      * @param packageMimeType
      * @return
      */
-    private static PackageStream.Metadata preparePackageMd(File packageFile, String packageSpec, String packageMimeType) {
+    private static PackageStream.Metadata preparePackageMd(File packageFile, String packageSpec,
+                                                           String packageMimeType) {
         PackageStream.Metadata md = mock(PackageStream.Metadata.class);
         when(md.name()).thenReturn(packageFile.getName());
         when(md.spec()).thenReturn(packageSpec);
