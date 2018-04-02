@@ -111,15 +111,8 @@ public class Sword2TransportSessionIT extends BaseIT {
      *     <li>Retrieves the {@code ServiceDocument}.</li>
      * </ul>
      */
-    @Override
     @Before
     public void setUp() {
-        try {
-            super.setUp();
-        } catch (Exception e) {
-            throw new RuntimeException(e.getMessage(), e);
-        }
-
         sampleZipPackage = new File(this.getClass().getResource(SIMPLE_ZIP_PACKAGE_RESOURCE).getPath());
         assertNotNull(sampleZipPackage);
         assertTrue("Missing sample package; cannot resolve '" + SIMPLE_ZIP_PACKAGE_RESOURCE +
