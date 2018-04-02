@@ -19,6 +19,7 @@ package org.dataconservancy.pass.deposit.transport.sword2;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.dataconservancy.nihms.assembler.PackageStream;
 import org.dataconservancy.nihms.integration.BaseIT;
+import org.junit.Before;
 import org.junit.Test;
 import org.swordapp.client.AuthCredentials;
 import org.swordapp.client.ClientConfiguration;
@@ -27,6 +28,7 @@ import org.swordapp.client.ServiceDocument;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.util.Collections;
@@ -42,90 +44,100 @@ import static org.mockito.Mockito.when;
 
 public class Sword2TransportSessionIT extends BaseIT {
 
+    /**
+     * User the SWORD client will authenticate as
+     */
     private static final String DSPACE_ADMIN_USER = "dspace-admin@oapass.org";
 
+    /**
+     * Password the SWORD client will authenticate with
+     */
     private static final String DSPACE_ADMIN_PASSWORD = "foobar";
 
-    private static final String PACKAGE_RESOURCE = "simplezippackage.zip";
+    /**
+     * A hard-coded classpath resource that resolves to a package composed of a simple zip file according to the
+     * packaging specification {@link #SPEC_SIMPLE_ZIP}.
+     */
+    private static final String SIMPLE_ZIP_PACKAGE_RESOURCE = "simplezippackage.zip";
 
+    /**
+     * Package specification URI identifying a simple zip file.
+     */
+    private static final String SPEC_SIMPLE_ZIP = "http://purl.org/net/sword/package/SimpleZip";
+
+    /**
+     * Mime type of zip files.
+     */
+    private static final String APPLICATION_ZIP = "application/zip";
+
+    /**
+     * FIXME: Hard-coded (for now) SWORD Service Document endpoint
+     */
     private static final String SERVICEDOC_ENDPOINT = "http://192.168.99.100:8181/swordv2/servicedocument";
 
-    @Test
-    public void testSimple() throws Exception {
-        File samplePackage = new File(this.getClass().getResource(PACKAGE_RESOURCE).getPath());
-        assertNotNull(samplePackage);
-        assertTrue("Missing sample package; cannot resolve '" + PACKAGE_RESOURCE + "' as a class path resource.",
-                samplePackage.exists());
+    /**
+     * Configured SWORD client
+     */
+    private SWORDClient swordClient;
+
+    /**
+     * Authentication credentials used by the client when communicating with a SWORD endpoint.  This object encapsulates
+     * the On-Behalf-Of semantics..
+     */
+    private AuthCredentials authCreds;
+
+    /**
+     * SWORD Service document retrieved from {@link #SERVICEDOC_ENDPOINT}.
+     */
+    private ServiceDocument serviceDoc;
+
+    /**
+     * Resolved package identified by {@link #SIMPLE_ZIP_PACKAGE_RESOURCE}
+     */
+    private File sampleZipPackage;
+
+    /**
+     * Performs basic IT setup:
+     * <ul>
+     *     <li>Discovers and makes available sample packages as {@code File} objects.</li>
+     *     <li>Provides basic {@code SWORDClient} configuration, including authentication credentials.</li>
+     *     <li>Retrieves the {@code ServiceDocument}.</li>
+     * </ul>
+     */
+    @Override
+    @Before
+    public void setUp() {
+        try {
+            super.setUp();
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+
+        sampleZipPackage = new File(this.getClass().getResource(SIMPLE_ZIP_PACKAGE_RESOURCE).getPath());
+        assertNotNull(sampleZipPackage);
+        assertTrue("Missing sample package; cannot resolve '" + SIMPLE_ZIP_PACKAGE_RESOURCE + "' as a class path resource.",
+                sampleZipPackage.exists());
+
 
         ClientConfiguration swordConfig = new ClientConfiguration();
         swordConfig.setReturnDepositReceipt(true);
         swordConfig.setUserAgent("oapass/SWORDv2");
 
-        AuthCredentials authCreds = new AuthCredentials(DSPACE_ADMIN_USER, DSPACE_ADMIN_PASSWORD);
+        authCreds = new AuthCredentials(DSPACE_ADMIN_USER, DSPACE_ADMIN_PASSWORD);
 
-        SWORDClient swordClient = new SWORDClient(swordConfig);
+        swordClient = new SWORDClient(swordConfig);
 
-        ServiceDocument serviceDoc = null;
-        try {
-            serviceDoc = swordClient.getServiceDocument(SERVICEDOC_ENDPOINT, authCreds);
-            assertNotNull(serviceDoc);
-        } catch (Exception e) {
-            String msg = String.format("Failed to connect to %s: %s", SERVICEDOC_ENDPOINT, e.getMessage());
-            LOG.error(msg, e);
-            fail(msg);
-        }
+        serviceDoc = getServiceDocument(swordClient, SERVICEDOC_ENDPOINT, authCreds);
+    }
 
-        PackageStream.Metadata md = mock(PackageStream.Metadata.class);
-        PackageStream packageStream = mock(PackageStream.class);
-
-        when(packageStream.open()).thenReturn(new FileInputStream(samplePackage));
-        when(packageStream.metadata()).thenReturn(md);
-        when(md.name()).thenReturn(samplePackage.getName());
-        when(md.spec()).thenReturn("http://purl.org/net/sword/package/SimpleZip");
-        when(md.archive()).thenReturn(PackageStream.ARCHIVE.ZIP);
-        when(md.archived()).thenReturn(true);
-        when(md.compression()).thenReturn(PackageStream.COMPRESSION.ZIP);
-        when(md.compressed()).thenReturn(true);
-        when(md.sizeBytes()).thenReturn(samplePackage.length());
-        when(md.mimeType()).thenReturn("application/zip");
-        final PackageStream.Checksum md5 = new PackageStream.Checksum() {
-            @Override
-            public PackageStream.Algo algorithm() {
-                return PackageStream.Algo.MD5;
-            }
-
-            @Override
-            public byte[] value() {
-                try {
-                    MessageDigest digest = MessageDigest.getInstance("MD5");
-                    return DigestUtils.digest(digest, new FileInputStream(samplePackage));
-                } catch (Exception e) {
-                    throw new RuntimeException(e.getMessage(), e);
-                }
-            }
-
-            @Override
-            public String asBase64() {
-                String base64 = encodeBase64String(value());
-                LOG.debug(">>>> base64 encoded md5 digest: '{}'", base64);
-                return base64;
-            }
-
-            @Override
-            public String asHex() {
-                String hex = null;
-                try {
-                    hex = DigestUtils.md5Hex(new FileInputStream(samplePackage));
-                } catch (IOException e) {
-                    throw new RuntimeException("Error calculating the MD5 checksum for '" + samplePackage.getPath() +
-                            "'");
-                }
-                LOG.debug(">>>> hex encoded md5 digest: '{}'", hex);
-                return hex;
-            }
-        };
-        when(md.checksum()).thenReturn(md5);
-        when(md.checksums()).thenReturn(Collections.singletonList(md5));
+    /**
+     * Deposits a package using the 'SimpleZip' packaging specification.  The response should be successful, and the
+     * {@link org.swordapp.client.DepositReceipt} non-null.
+     */
+    @Test
+    public void testSimple() throws FileNotFoundException {
+        PackageStream.Metadata md = preparePackageMd(sampleZipPackage, SPEC_SIMPLE_ZIP, APPLICATION_ZIP);
+        PackageStream packageStream = preparePackageStream(md, sampleZipPackage);
 
         Sword2TransportSession underTest = new Sword2TransportSession(swordClient, serviceDoc, authCreds);
 
@@ -137,5 +149,103 @@ public class Sword2TransportSessionIT extends BaseIT {
         assertNotNull(response);
         assertTrue(response.success());
         assertNotNull(response.getReceipt());
+    }
+
+    /**
+     * Generate the package stream for the supplied file.  The supplied {@code md} will be returned in response to
+     * {@link PackageStream#metadata()}.
+     *
+     * @param md
+     * @param packageFile
+     * @return
+     * @throws FileNotFoundException
+     */
+    private static PackageStream preparePackageStream(PackageStream.Metadata md, File packageFile) throws FileNotFoundException {
+        PackageStream packageStream = mock(PackageStream.class);
+
+        when(packageStream.open()).thenReturn(new FileInputStream(packageFile));
+        when(packageStream.metadata()).thenReturn(md);
+        return packageStream;
+    }
+
+    /**
+     * Generate the package metadata for the supplied file.  The returned metadata will use {@code packageSpec} for the
+     * {@link PackageStream.Metadata#spec()}, and {@code packageMimeType} for {@link PackageStream.Metadata#mimeType()}.
+     *
+     * @param packageFile
+     * @param packageSpec
+     * @param packageMimeType
+     * @return
+     */
+    private static PackageStream.Metadata preparePackageMd(File packageFile, String packageSpec, String packageMimeType) {
+        PackageStream.Metadata md = mock(PackageStream.Metadata.class);
+        when(md.name()).thenReturn(packageFile.getName());
+        when(md.spec()).thenReturn(packageSpec);
+        when(md.archive()).thenReturn(PackageStream.ARCHIVE.ZIP);
+        when(md.archived()).thenReturn(true);
+        when(md.compression()).thenReturn(PackageStream.COMPRESSION.ZIP);
+        when(md.compressed()).thenReturn(true);
+        when(md.sizeBytes()).thenReturn(packageFile.length());
+        when(md.mimeType()).thenReturn(packageMimeType);
+        final PackageStream.Checksum md5 = new PackageStream.Checksum() {
+            @Override
+            public PackageStream.Algo algorithm() {
+                return PackageStream.Algo.MD5;
+            }
+
+            @Override
+            public byte[] value() {
+                try {
+                    MessageDigest digest = MessageDigest.getInstance("MD5");
+                    return DigestUtils.digest(digest, new FileInputStream(packageFile));
+                } catch (Exception e) {
+                    throw new RuntimeException(e.getMessage(), e);
+                }
+            }
+
+            @Override
+            public String asBase64() {
+                return encodeBase64String(value());
+            }
+
+            @Override
+            public String asHex() {
+                String hex = null;
+                try {
+                    hex = DigestUtils.md5Hex(new FileInputStream(packageFile));
+                } catch (IOException e) {
+                    throw new RuntimeException("Error calculating the MD5 checksum for '" +
+                            packageFile.getPath() + "'");
+                }
+                return hex;
+            }
+        };
+        when(md.checksum()).thenReturn(md5);
+        when(md.checksums()).thenReturn(Collections.singletonList(md5));
+
+        return md;
+    }
+
+    /**
+     * Retrieve the service document from {@code serviceDocEndpoint} using the supplied {@code swordClient} and
+     * {@code authCreds}.
+     *
+     * @param swordClient
+     * @param serviceDocEndpoint
+     * @param authCreds
+     * @return
+     */
+    private static ServiceDocument getServiceDocument(SWORDClient swordClient, String serviceDocEndpoint,
+                                                      AuthCredentials authCreds) {
+        ServiceDocument serviceDoc = null;
+        try {
+            serviceDoc = swordClient.getServiceDocument(serviceDocEndpoint, authCreds);
+            assertNotNull(serviceDoc);
+        } catch (Exception e) {
+            String msg = String.format("Failed to connect to %s: %s", serviceDocEndpoint, e.getMessage());
+            LOG.error(msg, e);
+            fail(msg);
+        }
+        return serviceDoc;
     }
 }
