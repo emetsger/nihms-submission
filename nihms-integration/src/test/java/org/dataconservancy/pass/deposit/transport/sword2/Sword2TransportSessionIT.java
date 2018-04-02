@@ -73,14 +73,16 @@ public class Sword2TransportSessionIT extends BaseIT {
     private static final String APPLICATION_ZIP = "application/zip";
 
     /**
-     * FIXME: Hard-coded (for now) SWORD Service Document endpoint
+     * SWORD Service Document endpoint
      */
-    private static final String SERVICEDOC_ENDPOINT = "http://192.168.99.100:8181/swordv2/servicedocument";
+    private static final String SERVICEDOC_ENDPOINT = String.format("http://%s:8181/swordv2/servicedocument",
+            System.getProperty(DOCKER_HOST_PROPERTY, "localhost"));
 
     /**
-     * FIXME: Hard-coded (for now) SWORD Collection being deposited to
+     * SWORD Collection being deposited to
      */
-    private static final String SWORD_COLLECTION_URL = "http://192.168.99.100:8181/swordv2/collection/123456789/2";
+    private static final String SWORD_COLLECTION_URL = String.format("http://%s:8181/swordv2/collection/123456789/2",
+            System.getProperty(DOCKER_HOST_PROPERTY, "localhost"));
 
     /**
      * Configured SWORD client
