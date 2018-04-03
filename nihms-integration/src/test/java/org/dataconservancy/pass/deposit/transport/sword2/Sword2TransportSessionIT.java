@@ -17,6 +17,7 @@
 package org.dataconservancy.pass.deposit.transport.sword2;
 
 import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.io.input.BrokenInputStream;
 import org.dataconservancy.nihms.assembler.PackageStream;
 import org.dataconservancy.nihms.integration.BaseIT;
 import org.dataconservancy.nihms.transport.TransportResponse;
@@ -24,7 +25,11 @@ import org.junit.Before;
 import org.junit.Test;
 import org.swordapp.client.AuthCredentials;
 import org.swordapp.client.ClientConfiguration;
+import org.swordapp.client.ProtocolViolationException;
 import org.swordapp.client.SWORDClient;
+import org.swordapp.client.SWORDClientException;
+import org.swordapp.client.SWORDCollection;
+import org.swordapp.client.SWORDError;
 import org.swordapp.client.ServiceDocument;
 
 import java.io.File;
@@ -37,11 +42,16 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static org.apache.commons.codec.binary.Base64.encodeBase64String;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 public class Sword2TransportSessionIT extends BaseIT {
@@ -248,6 +258,62 @@ public class Sword2TransportSessionIT extends BaseIT {
         assertFalse(response.success());
         assertNotNull(response.error());
         assertTrue(response.error() instanceof InvalidCollectionUrl);
+    }
+
+    /**
+     * Purposefully throw an exception when the PackageStream is opened.  The underlying error is available as
+     * as suppressed exception.
+     */
+    @Test
+    public void testIOException() throws FileNotFoundException {
+        PackageStream.Metadata md = preparePackageMd(sampleZipPackage, SPEC_SIMPLE_ZIP, APPLICATION_ZIP);
+        PackageStream packageStream = preparePackageStream(md, sampleZipPackage);
+
+        final IOException expectedException = new IOException("Expected Exception!");
+        BrokenInputStream brokenIn = new BrokenInputStream(expectedException);
+        when(packageStream.open()).thenReturn(brokenIn);
+
+        Sword2TransportSession underTest = new Sword2TransportSession(swordClient, serviceDoc, authCreds);
+
+        Map<String, String> transportMd = new HashMap<>();
+        transportMd.put(Sword2TransportHints.SWORD_COLLECTION_URL, SWORD_COLLECTION_URL);
+
+        TransportResponse response = underTest.send(packageStream, transportMd);
+
+        assertNotNull(response);
+        assertFalse(response.success());
+        assertNotNull(response.error());
+        assertNotNull(response.error().getCause());
+
+        // due to use of try-with-resources blocks
+        assertEquals(1, response.error().getCause().getSuppressed().length);
+        assertSame(expectedException, response.error().getCause().getSuppressed()[0]);
+    }
+
+    /**
+     * Purposefully throw a RuntimeException when the Package is deposited.
+     */
+    @Test
+    public void testGenericException() throws FileNotFoundException, ProtocolViolationException, SWORDError,
+                                              SWORDClientException {
+        PackageStream.Metadata md = preparePackageMd(sampleZipPackage, SPEC_SIMPLE_ZIP, APPLICATION_ZIP);
+        PackageStream packageStream = preparePackageStream(md, sampleZipPackage);
+
+        RuntimeException expectedException = new RuntimeException("Expected exception!");
+        SWORDClient swordClient = mock(SWORDClient.class);
+        when(swordClient.deposit(any(SWORDCollection.class), any(), eq(authCreds))).thenThrow(expectedException);
+
+        Sword2TransportSession underTest = new Sword2TransportSession(swordClient, serviceDoc, authCreds);
+
+        Map<String, String> transportMd = new HashMap<>();
+        transportMd.put(Sword2TransportHints.SWORD_COLLECTION_URL, SWORD_COLLECTION_URL);
+
+        TransportResponse response = underTest.send(packageStream, transportMd);
+
+        assertNotNull(response);
+        assertFalse(response.success());
+        assertNotNull(response.error());
+        assertSame(expectedException, response.error().getCause());
     }
 
     /**

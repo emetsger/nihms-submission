@@ -157,7 +157,7 @@ public class Sword2TransportSession implements TransportSession {
             return new Sword2ThrowableResponse(e);
         } catch (IOException e) {
             return new Sword2ThrowableResponse(new RuntimeException("Error closing PackageStream: " + e.getMessage(), e));
-        } catch (SWORDClientException e) {
+        } catch (Exception e) {
             return new Sword2ThrowableResponse(new RuntimeException("Error depositing SWORD package to '" +
                     selectCollection(serviceDocument, packageStream.metadata(), metadata).getHref().toASCIIString() +
                     "': " + e.getMessage(), e));
