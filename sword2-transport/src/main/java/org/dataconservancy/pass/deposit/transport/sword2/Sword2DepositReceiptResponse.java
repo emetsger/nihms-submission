@@ -40,7 +40,6 @@ public class Sword2DepositReceiptResponse implements TransportResponse {
         this.receipt = receipt;
     }
 
-    // TODO: return true if *accepted* but will need to be polled for success
     @Override
     public boolean success() {
         return receipt.getStatusCode() > 199 && receipt.getStatusCode() < 300;
