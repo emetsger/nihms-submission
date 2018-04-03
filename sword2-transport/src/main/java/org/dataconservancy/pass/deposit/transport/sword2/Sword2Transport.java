@@ -15,6 +15,7 @@
  */
 package org.dataconservancy.pass.deposit.transport.sword2;
 
+import org.dataconservancy.nihms.assembler.PackageStream;
 import org.dataconservancy.nihms.transport.Transport;
 import org.dataconservancy.nihms.transport.TransportSession;
 import org.swordapp.client.AuthCredentials;
@@ -28,6 +29,41 @@ import java.util.Map;
 import static org.dataconservancy.pass.deposit.transport.sword2.Sword2TransportHints.SWORD_SERVICE_DOC_URL;
 
 /**
+ * Encapsulates a provider for SWORD protocol version 2 transport sessions.  {@link #open(Map) Opening} a SWORDv2
+ * transport session entails the following:
+ * <ol>
+ *     <li>Instantiating a {@link SWORDClient}</li>
+ *     <li>Logging into the SWORD endpoint using the credentials provided by the {@link Transport#TRANSPORT_USERNAME},
+ *         {@link Transport#TRANSPORT_PASSWORD}, and {@link Sword2TransportHints#SWORD_ON_BEHALF_OF_USER} hints</li>
+ *     <li>Obtaining the SWORD service document from the URL provided by the
+ *         {@link Sword2TransportHints#SWORD_SERVICE_DOC_URL} hint</li>
+ * </ol>
+ * In other words, a caller executing a {@link Sword2Transport#open(Map)} will receive a {@link Sword2TransportSession}
+ * that is configured with a {@code SWORDClient}, working authentication credentials (potentially acting on behalf of
+ * a user), and the {@code ServiceDocument} located at the {@link Sword2TransportHints#SWORD_SERVICE_DOC_URL service
+ * document URL}.
+ *
+ * Hints accepted by this transport are:
+ * <dl>
+ *     <dt>{@link Transport#TRANSPORT_USERNAME}</dt>
+ *     <dd>The username to authenticate as</dd>
+ *     <dt>{@link Transport#TRANSPORT_PASSWORD}</dt>
+ *     <dd>The password to authenticate with</dd>
+ *     <dt>{@link Transport#TRANSPORT_AUTHMODE}</dt>
+ *     <dd>The authentication mode, which must be set to {@link Transport.AUTHMODE#userpass}</dd>
+ *     <dt>{@link Sword2TransportHints#SWORD_SERVICE_DOC_URL}</dt>
+ *     <dd>A URL to the SWORD version 2 service document</dd>
+ *     <dt>{@link Sword2TransportHints#SWORD_COLLECTION_URL}</dt>
+ *     <dd>A URL to the SWORD version 2 collection that packages will be deposited to upon
+ *         {@link Sword2TransportSession#send(PackageStream, Map) send}</dd>
+ *     <dt><em>Optional:</em> {@link Sword2TransportHints#SWORD_ON_BEHALF_OF_USER}</dt>
+ *     <dd>The username this session is being opened for</dd>
+ *     <dt><em>Optional:</em> {@link Sword2TransportHints#SWORD_CLIENT_USER_AGENT}</dt>
+ *     <dd>A string used to identify the user agent when opening transport sessions</dd>
+ *     <dt><em>Optional:</em> {@link Sword2TransportHints#SWORD_DEPOSIT_RECEIPT_FLAG}</dt>
+ *     <dd>A boolean flag indicating whether or not a deposit receipt is required</dd>
+ * </dl>
+ *
  * @author Elliot Metsger (emetsger@jhu.edu)
  */
 public class Sword2Transport implements Transport {

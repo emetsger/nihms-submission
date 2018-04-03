@@ -35,4 +35,14 @@ public interface Sword2TransportHints {
      */
     String SWORD_ON_BEHALF_OF_USER = "deposit.transport.sword.on-behalf-of";
 
+    /**
+     * Property identifying whether or not a deposit receipt is requested
+     */
+    String SWORD_DEPOSIT_RECEIPT_FLAG = "deposit.transport.sword.deposit-receipt";
+
+    /**
+     * Property identifying the user agent string used by this client when opening transport sessions
+     */
+    String SWORD_CLIENT_USER_AGENT = "deposit.transport.sword.user-agent-string";
+
 }

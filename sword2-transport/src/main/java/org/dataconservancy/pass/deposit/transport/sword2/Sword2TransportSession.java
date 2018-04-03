@@ -35,6 +35,9 @@ import java.io.InputStream;
 import java.util.Map;
 
 /**
+ * Encapsulates a session with a SWORDv2 endpoint authenticated using the transport hints supplied on {@link
+ * Sword2Transport#open(Map)}.
+ *
  * @author Elliot Metsger (emetsger@jhu.edu)
  */
 public class Sword2TransportSession implements TransportSession {
