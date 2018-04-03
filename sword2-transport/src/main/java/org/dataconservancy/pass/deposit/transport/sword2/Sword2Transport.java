@@ -32,7 +32,7 @@ import static org.dataconservancy.pass.deposit.transport.sword2.Sword2TransportH
  */
 public class Sword2Transport implements Transport {
 
-    private static final String MISSING_REQUIRED_HINT = "Missing required transport hint '%s'";
+    static final String MISSING_REQUIRED_HINT = "Missing required transport hint '%s'";
 
     private Sword2ClientFactory clientFactory;
 
@@ -44,31 +44,34 @@ public class Sword2Transport implements Transport {
     }
 
     /**
-     * Hints must carry:
+     * Hints <em>must</em> carry:
      * <ul>
      *     <li>Service document URL</li>
      *     <li>Username and pass for retrieving service doc</li>
+     * </ul>
+     * Hints may carry:
+     * <ul>
      *     <li>on-behalf-of user</li>
      * </ul>
      * @param hints
      * @return
      */
     @Override
-    public TransportSession open(Map<String, String> hints) {
+    public Sword2TransportSession open(Map<String, String> hints) {
         SWORDClient client = clientFactory.newInstance(hints);
         String serviceDocUrl = getServiceDocUrl(hints);
 
         if (!AUTHMODE.userpass.name().equals(hints.get(TRANSPORT_AUTHMODE))) {
-            throw new RuntimeException("This transport only supports AUTHMODE " + AUTHMODE.userpass.name() +
+            throw new IllegalArgumentException("This transport only supports AUTHMODE " + AUTHMODE.userpass.name() +
                     " (was: '" + hints.get(TRANSPORT_AUTHMODE) + "'");
         }
 
         if (hints.get(TRANSPORT_USERNAME) == null || hints.get(TRANSPORT_USERNAME).trim().length() == 0) {
-            throw new RuntimeException(String.format(MISSING_REQUIRED_HINT, TRANSPORT_USERNAME));
+            throw new IllegalArgumentException(String.format(MISSING_REQUIRED_HINT, TRANSPORT_USERNAME));
         }
 
         if (hints.get(TRANSPORT_PASSWORD) == null || hints.get(TRANSPORT_PASSWORD).trim().length() == 0) {
-            throw new RuntimeException(String.format(MISSING_REQUIRED_HINT, TRANSPORT_PASSWORD));
+            throw new IllegalArgumentException(String.format(MISSING_REQUIRED_HINT, TRANSPORT_PASSWORD));
         }
 
         ServiceDocument serviceDocument = null;
@@ -100,7 +103,7 @@ public class Sword2Transport implements Transport {
      */
     private String getServiceDocUrl(Map<String, String> hints) {
         if (hints.get(SWORD_SERVICE_DOC_URL) == null || hints.get(SWORD_SERVICE_DOC_URL).trim().length() == 0) {
-            throw new RuntimeException(String.format(MISSING_REQUIRED_HINT, SWORD_SERVICE_DOC_URL));
+            throw new IllegalArgumentException(String.format(MISSING_REQUIRED_HINT, SWORD_SERVICE_DOC_URL));
         }
 
         return hints.get(SWORD_SERVICE_DOC_URL);

@@ -207,4 +207,13 @@ public class Sword2TransportSession implements TransportSession {
 
         return collection;
     }
+
+    /**
+     * Exposed for unit testing only.
+     *
+     * @return the configured SWORD authentication credentials
+     */
+    AuthCredentials getAuthCreds() {
+        return authCreds;
+    }
 }
