@@ -48,6 +48,11 @@
         </dependency>
 
         <dependency>
+            <groupId>org.dataconservancy.pass</groupId>
+            <artifactId>mets-api</artifactId>
+        </dependency>
+
+        <dependency>
             <groupId>org.dataconservancy.nihms</groupId>
             <artifactId>nihms-util</artifactId>
             <version>${project.parent.version}</version>
