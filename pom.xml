@@ -38,6 +38,7 @@
         <module>nihms-integration</module>
         <module>nihms-util</module>
         <module>nihms-cli</module>
+        <module>dspace-mets-assembler</module>
     </modules>
 
     <profiles>
