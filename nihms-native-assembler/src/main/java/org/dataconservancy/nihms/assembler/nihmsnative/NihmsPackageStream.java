@@ -17,21 +17,11 @@
 package org.dataconservancy.nihms.assembler.nihmsnative;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.dataconservancy.nihms.assembler.PackageStream;
-import org.dataconservancy.nihms.assembler.ResourceStreamCallback;
+import org.dataconservancy.nihms.assembler.MetadataBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
-import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
-import java.util.zip.GZIPOutputStream;
-
-import static org.apache.commons.compress.archivers.ArchiveStreamFactory.TAR;
 
 public class NihmsPackageStream extends AbstractPackageStream {
 
@@ -50,15 +40,15 @@ public class NihmsPackageStream extends AbstractPackageStream {
     private StreamingSerializer metadataSerializer;
 
     public NihmsPackageStream(StreamingSerializer manifestSerializer, StreamingSerializer metadataSerializer,
-                              List<org.springframework.core.io.Resource> packageFiles, Metadata metadata) {
-        super(packageFiles, metadata);
+                              List<org.springframework.core.io.Resource> custodialResources, MetadataBuilder metadata, ResourceBuilderFactory rbf) {
+        super(custodialResources, metadata, rbf);
         this.manifestSerializer = manifestSerializer;
         this.metadataSerializer = metadataSerializer;
     }
 
     @Override
-    public AbstractThreadedOutputStreamWriter getStreamWriter(TarArchiveOutputStream archiveOut) {
-        ThreadedOutputStreamWriter threadedWriter = new ThreadedOutputStreamWriter("Archive Piped Writer", archiveOut, packageFiles, manifestSerializer, metadataSerializer);
+    public AbstractThreadedOutputStreamWriter getStreamWriter(TarArchiveOutputStream archiveOut, ResourceBuilderFactory rbf) {
+        ThreadedOutputStreamWriter threadedWriter = new ThreadedOutputStreamWriter("Archive Piped Writer", archiveOut, custodialContent, manifestSerializer, metadataSerializer);
 
         return threadedWriter;
     }
