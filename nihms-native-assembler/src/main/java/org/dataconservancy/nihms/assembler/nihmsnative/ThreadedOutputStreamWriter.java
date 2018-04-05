@@ -69,6 +69,7 @@ class ThreadedOutputStreamWriter extends AbstractThreadedOutputStreamWriter {
         TarArchiveEntry metadataEntry = new TarArchiveEntry(METADATA_ENTRY_NAME);
         putResource(archiveOut, manifestEntry, updateLength(manifestEntry, manifestSerializer.serialize()));
         putResource(archiveOut, metadataEntry, updateLength(metadataEntry, metadataSerializer.serialize()));
+        debugResources(resources);
     }
 
     private InputStream updateLength(TarArchiveEntry entry, InputStream toSize) throws IOException {
@@ -78,6 +79,10 @@ class ThreadedOutputStreamWriter extends AbstractThreadedOutputStreamWriter {
         entry.setSize(baos.size());
         LOG.debug("Updating tar entry {} size to {}", entry.getName(), baos.size());
         return new ByteArrayInputStream(baos.toByteArray());
+    }
+
+    private void debugResources(List<PackageStream.Resource> resources) {
+        resources.forEach(r -> LOG.debug(">>>> Assembling resource: {}", r));
     }
 
 }

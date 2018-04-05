@@ -33,7 +33,7 @@ import java.util.zip.GZIPOutputStream;
 
 import static org.apache.commons.compress.archivers.ArchiveStreamFactory.TAR;
 
-public class NihmsPackageStream implements PackageStream {
+public class NihmsPackageStream extends AbstractPackageStream {
 
     static final String MANIFEST_ENTRY_NAME = "manifest.txt";
 
@@ -45,109 +45,21 @@ public class NihmsPackageStream implements PackageStream {
 
     private static final Logger LOG = LoggerFactory.getLogger(NihmsPackageStream.class);
 
-    private static final int ONE_MIB = 2 ^ 20;
-
     private StreamingSerializer manifestSerializer;
 
     private StreamingSerializer metadataSerializer;
 
-    private List<org.springframework.core.io.Resource> packageFiles;
-
-    private Metadata metadata;
-
-    private List<ResourceStreamCallback> assemblyCallbacks = Collections.emptyList();
-
     public NihmsPackageStream(StreamingSerializer manifestSerializer, StreamingSerializer metadataSerializer,
                               List<org.springframework.core.io.Resource> packageFiles, Metadata metadata) {
+        super(packageFiles, metadata);
         this.manifestSerializer = manifestSerializer;
         this.metadataSerializer = metadataSerializer;
-        this.packageFiles = packageFiles;
-        this.metadata = metadata;
     }
 
     @Override
-    public InputStream open() {
-
-        PipedInputStream pipedIn = new PipedInputStream(ONE_MIB);
-        PipedOutputStream pipedOut;
-        try {
-            pipedOut = new PipedOutputStream(pipedIn);
-        } catch (IOException e) {
-            throw new RuntimeException(e.getMessage(), e);
-        }
-
-        TarArchiveOutputStream archiveOut;
-        GZIPOutputStream gzipOut;
-
-        try {
-            gzipOut = new GZIPOutputStream(pipedOut, true);
-            archiveOut = new TarArchiveOutputStream(gzipOut);
-        } catch (Exception e) {
-            throw new RuntimeException(String.format(ERR_CREATING_ARCHIVE_STREAM, TAR, e.getMessage()), e);
-        }
-
-
-        // put below in a thread, and start
-        // then return pipedIn
-
+    public AbstractThreadedOutputStreamWriter getStreamWriter(TarArchiveOutputStream archiveOut) {
         ThreadedOutputStreamWriter threadedWriter = new ThreadedOutputStreamWriter("Archive Piped Writer", archiveOut, packageFiles, manifestSerializer, metadataSerializer);
-        threadedWriter.setCloseStreamHandler(() -> {
-                    try {
-                        pipedOut.close();
-                    } catch (IOException e) {
-                        LOG.info("Error closing piped output stream: {}", e.getMessage(), e);
-                    }
 
-                    try {
-                        gzipOut.close();
-                    } catch (IOException e) {
-                        LOG.info("Error closing the gzip output stream: {}", e.getMessage(), e);
-                    }
-
-                    try {
-                        archiveOut.close();
-                    } catch (IOException e) {
-                        try {
-                            archiveOut.closeArchiveEntry();
-                        } catch (IOException e1) {
-                            LOG.info("Error closing archive entry: {}", e.getMessage(), e);
-                        }
-
-                        try {
-                            archiveOut.close();
-                        } catch (IOException e1) {
-                            // too bad
-                            LOG.info("Error closing the archive output stream: {}", e.getMessage(), e);
-                        }
-                    }
-                }
-        );
-        threadedWriter.start();
-
-        return pipedIn;
-
-    }
-
-    @Override
-    public Metadata metadata() {
-        return metadata;
-    }
-
-    @Override
-    public InputStream open(String packageResource) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public Iterator<Resource> resources() {
-        throw new UnsupportedOperationException();
-    }
-
-    public List<ResourceStreamCallback> getAssemblyCallbacks() {
-        return assemblyCallbacks;
-    }
-
-    public void setAssemblyCallbacks(List<ResourceStreamCallback> assemblyCallbacks) {
-        this.assemblyCallbacks = assemblyCallbacks;
+        return threadedWriter;
     }
 }
