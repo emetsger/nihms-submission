@@ -99,4 +99,10 @@ class ResourceImpl implements PackageStream.Resource {
     public void addChecksum(PackageStream.Checksum checksum) {
         this.checksums.add(checksum);
     }
+
+    @Override
+    public String toString() {
+        return "ResourceImpl{" + "sizeBytes=" + sizeBytes + ", mimeType='" + mimeType + '\'' + ", name='" + name +
+                '\'' + ", checksums=" + checksums + '}';
+    }
 }

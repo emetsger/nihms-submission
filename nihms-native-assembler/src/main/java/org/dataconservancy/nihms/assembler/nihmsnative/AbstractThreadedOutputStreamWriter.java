@@ -41,7 +41,7 @@ import static org.dataconservancy.nihms.assembler.nihmsnative.NihmsPackageStream
 /**
  * @author Elliot Metsger (emetsger@jhu.edu)
  */
-abstract class AbstractThreadedOutputStreamWriter extends Thread {
+public abstract class AbstractThreadedOutputStreamWriter extends Thread {
 
     private static final Logger LOG = LoggerFactory.getLogger(AbstractThreadedOutputStreamWriter.class);
 
