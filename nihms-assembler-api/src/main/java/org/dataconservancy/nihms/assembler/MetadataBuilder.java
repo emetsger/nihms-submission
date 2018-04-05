@@ -21,7 +21,7 @@ package org.dataconservancy.nihms.assembler;
  *
  * @author Elliot Metsger (emetsger@jhu.edu)
  */
-public interface PackageMetadataBuilder {
+public interface MetadataBuilder {
 
     /**
      * Sets the {@link PackageStream.Metadata#name()} of the {@code PackageStream}, suitable for use as a filename.
@@ -30,7 +30,7 @@ public interface PackageMetadataBuilder {
      * @return this builder
      * @see PackageStream.Metadata#name()
      */
-    PackageMetadataBuilder name(String name);
+    MetadataBuilder name(String name);
 
     /**
      * Sets the {@link PackageStream.Metadata#spec()} of the {@code PackageStream}.
@@ -39,7 +39,7 @@ public interface PackageMetadataBuilder {
      * @return this builder
      * @see PackageStream.Metadata#spec()
      */
-    PackageMetadataBuilder spec(String spec);
+    MetadataBuilder spec(String spec);
 
     /**
      * Sets the {@link PackageStream.Metadata#mimeType()} of the {@code PackageStream}, as returned by
@@ -49,7 +49,7 @@ public interface PackageMetadataBuilder {
      * @return this builder
      * @see PackageStream.Metadata#mimeType()
      */
-    PackageMetadataBuilder mimeType(String mimeType);
+    MetadataBuilder mimeType(String mimeType);
 
     /**
      * Sets the {@link PackageStream.Metadata#sizeBytes()} of the {@code PackageStream}, as returned by
@@ -59,7 +59,7 @@ public interface PackageMetadataBuilder {
      * @return this builder
      * @see PackageStream.Metadata#sizeBytes()
      */
-    PackageMetadataBuilder sizeBytes(long sizeBytes);
+    MetadataBuilder sizeBytes(long sizeBytes);
 
     /**
      * Sets the {@link PackageStream.Metadata#compressed()} flag of the {@code PackageStream}.
@@ -68,7 +68,7 @@ public interface PackageMetadataBuilder {
      * @return this builder
      * @see PackageStream.Metadata#compressed()
      */
-    PackageMetadataBuilder compressed(boolean compressed);
+    MetadataBuilder compressed(boolean compressed);
 
     /**
      * Sets the {@link PackageStream.Metadata#compression()} used by the {@code PackageStream}, as returned by
@@ -78,7 +78,7 @@ public interface PackageMetadataBuilder {
      * @return this builder
      * @see PackageStream.Metadata#compression()
      */
-    PackageMetadataBuilder compression(PackageStream.COMPRESSION compression);
+    MetadataBuilder compression(PackageStream.COMPRESSION compression);
 
     /**
      * Sets the {@link PackageStream.Metadata#archived()} flag of the {@code PackageStream}.
@@ -87,7 +87,7 @@ public interface PackageMetadataBuilder {
      * @return this builder
      * @see PackageStream.Metadata#archived()
      */
-    PackageMetadataBuilder archived(boolean archived);
+    MetadataBuilder archived(boolean archived);
 
     /**
      * Sets the {@link PackageStream.Metadata#archive()} format used by the {@code PackageStream}, as returned by
@@ -97,7 +97,7 @@ public interface PackageMetadataBuilder {
      * @return this builder
      * @see PackageStream.Metadata#archive()
      */
-    PackageMetadataBuilder archive(PackageStream.ARCHIVE archive);
+    MetadataBuilder archive(PackageStream.ARCHIVE archive);
 
     /**
      * Adds a {@link PackageStream.Metadata#checksum()} of the {@code PackageStream}.  The first
@@ -108,7 +108,7 @@ public interface PackageMetadataBuilder {
      * @return this builder
      * @see PackageStream.Metadata#checksum()
      */
-    PackageMetadataBuilder checksum(PackageStream.Checksum checksum);
+    MetadataBuilder checksum(PackageStream.Checksum checksum);
 
     /**
      * Builds the Metadata object from the state set on this builder.
