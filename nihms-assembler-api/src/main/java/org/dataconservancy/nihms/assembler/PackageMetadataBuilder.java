@@ -16,6 +16,9 @@
 package org.dataconservancy.nihms.assembler;
 
 /**
+ * Allows for various components to contribute to the state of {@link PackageStream.Metadata} without the requirement to
+ * share knowledge of the underlying implementation.
+ *
  * @author Elliot Metsger (emetsger@jhu.edu)
  */
 public interface PackageMetadataBuilder {
@@ -42,7 +45,7 @@ public interface PackageMetadataBuilder {
      * Sets the {@link PackageStream.Metadata#mimeType()} of the {@code PackageStream}, as returned by
      * {@link PackageStream#open()}
      *
-     * @param mimeType the package specification
+     * @param mimeType the package mime type
      * @return this builder
      * @see PackageStream.Metadata#mimeType()
      */
@@ -52,7 +55,7 @@ public interface PackageMetadataBuilder {
      * Sets the {@link PackageStream.Metadata#sizeBytes()} of the {@code PackageStream}, as returned by
      * {@link PackageStream#open()}
      *
-     * @param sizeBytes the size o
+     * @param sizeBytes the size of the package, in bytes
      * @return this builder
      * @see PackageStream.Metadata#sizeBytes()
      */
@@ -61,7 +64,7 @@ public interface PackageMetadataBuilder {
     /**
      * Sets the {@link PackageStream.Metadata#compressed()} flag of the {@code PackageStream}.
      *
-     * @param compressed the package specification
+     * @param compressed flag indicating if the package is compressed
      * @return this builder
      * @see PackageStream.Metadata#compressed()
      */
@@ -71,7 +74,7 @@ public interface PackageMetadataBuilder {
      * Sets the {@link PackageStream.Metadata#compression()} used by the {@code PackageStream}, as returned by
      * {@link PackageStream#open()}.
      *
-     * @param compression the package specification
+     * @param compression the compression algorithm
      * @return this builder
      * @see PackageStream.Metadata#compression()
      */
@@ -80,7 +83,7 @@ public interface PackageMetadataBuilder {
     /**
      * Sets the {@link PackageStream.Metadata#archived()} flag of the {@code PackageStream}.
      *
-     * @param archived the package specification
+     * @param archived flag indicating if the package is an archive
      * @return this builder
      * @see PackageStream.Metadata#archived()
      */
@@ -90,7 +93,7 @@ public interface PackageMetadataBuilder {
      * Sets the {@link PackageStream.Metadata#archive()} format used by the {@code PackageStream}, as returned by
      * {@link PackageStream#open()}.
      *
-     * @param archive the package specification
+     * @param archive the archival format
      * @return this builder
      * @see PackageStream.Metadata#archive()
      */
@@ -101,7 +104,7 @@ public interface PackageMetadataBuilder {
      * checksum added will be considered the "primary" checksum, returned in response to {@link
      * PackageStream.Metadata#checksum()}.
      *
-     * @param checksum the package specification
+     * @param checksum a checksum of the package
      * @return this builder
      * @see PackageStream.Metadata#checksum()
      */
