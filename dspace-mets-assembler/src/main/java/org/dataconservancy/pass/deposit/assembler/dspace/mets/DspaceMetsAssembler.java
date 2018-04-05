@@ -18,6 +18,7 @@ package org.dataconservancy.pass.deposit.assembler.dspace.mets;
 
 import org.dataconservancy.nihms.assembler.Assembler;
 import org.dataconservancy.nihms.assembler.PackageStream;
+import org.dataconservancy.nihms.assembler.nihmsnative.SimpleMetadataImpl;
 import org.dataconservancy.nihms.model.NihmsFile;
 import org.dataconservancy.nihms.model.NihmsSubmission;
 import org.springframework.core.io.ClassPathResource;
@@ -74,6 +75,9 @@ public class DspaceMetsAssembler implements Assembler {
                     throw new RuntimeException(String.format(ERR_MAPPING_LOCATION, location));
                 })
                 .collect(Collectors.toList());
+
+
+        DspaceMetsPackageStream packageStream = new DspaceMetsPackageStream(fileResources)
     }
 
 }

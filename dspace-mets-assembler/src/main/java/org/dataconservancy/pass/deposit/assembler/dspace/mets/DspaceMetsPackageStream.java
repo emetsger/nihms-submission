@@ -17,18 +17,27 @@
 package org.dataconservancy.pass.deposit.assembler.dspace.mets;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
-import org.dataconservancy.nihms.assembler.PackageStream;
 import org.dataconservancy.nihms.assembler.nihmsnative.AbstractPackageStream;
 import org.dataconservancy.nihms.assembler.nihmsnative.AbstractThreadedOutputStreamWriter;
 
-import java.io.InputStream;
-import java.util.Iterator;
+import java.util.List;
 
 public class DspaceMetsPackageStream extends AbstractPackageStream {
 
+    private MetsDomWriter metsWriter;
+
+    public DspaceMetsPackageStream(List<org.springframework.core.io.Resource> packageFiles, Metadata metadata,
+                                   MetsDomWriter metsWriter) {
+        super(packageFiles, metadata);
+        if (metsWriter == null) {
+            throw new IllegalArgumentException("METS writer must not be null.");
+        }
+        this.metsWriter = metsWriter;
+    }
 
     @Override
     public AbstractThreadedOutputStreamWriter getStreamWriter(TarArchiveOutputStream tarArchiveOutputStream) {
-        return null;
+        return new DspaceMetsThreadedOutputStreamWriter("DSpace Archive Writer", tarArchiveOutputStream,
+                packageFiles, metsWriter);
     }
 }

@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -47,9 +48,11 @@ public abstract class AbstractThreadedOutputStreamWriter extends Thread {
 
     private List<Resource> packageFiles;
 
-    protected ArchiveOutputStream archiveOut;
-
     private AbstractThreadedOutputStreamWriter.CloseOutputstreamCallback closeStreamHandler;
+
+    protected static final int THIRTY_TWO_KIB = 32 * 2 ^ 10;
+
+    protected ArchiveOutputStream archiveOut;
 
     public AbstractThreadedOutputStreamWriter(String threadName, ArchiveOutputStream archiveOut, List<Resource> packageFiles) {
         super(threadName);
@@ -145,6 +148,15 @@ public abstract class AbstractThreadedOutputStreamWriter extends Thread {
         archiveOut.putArchiveEntry(archiveEntry);
         IOUtils.copy(inputStream, archiveOut);
         archiveOut.closeArchiveEntry();
+    }
+
+    protected InputStream updateLength(TarArchiveEntry entry, InputStream toSize) throws IOException {
+        org.apache.commons.io.output.ByteArrayOutputStream baos =
+                new org.apache.commons.io.output.ByteArrayOutputStream(THIRTY_TWO_KIB);
+        IOUtils.copy(toSize, baos);
+        entry.setSize(baos.size());
+        LOG.debug("Updating tar entry {} size to {}", entry.getName(), baos.size());
+        return new ByteArrayInputStream(baos.toByteArray());
     }
 
     interface CloseOutputstreamCallback {

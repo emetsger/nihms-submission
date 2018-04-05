@@ -28,7 +28,7 @@ import java.util.List;
  * the suggested file name and/or stream length consider using the {@link #SimpleMetadataImpl(String) convenience}
  * {@link #SimpleMetadataImpl(String, long) constructors}.
  */
-class SimpleMetadataImpl implements PackageStream.Metadata {
+public class SimpleMetadataImpl implements PackageStream.Metadata {
 
     private String name;
 
@@ -48,15 +48,15 @@ class SimpleMetadataImpl implements PackageStream.Metadata {
 
     private List<PackageStream.Checksum> checksums = Collections.EMPTY_LIST;
 
-    SimpleMetadataImpl() {
+    public SimpleMetadataImpl() {
 
     }
 
-    SimpleMetadataImpl(String name) {
+    public SimpleMetadataImpl(String name) {
         this.name = name;
     }
 
-    SimpleMetadataImpl(String name, long sizeBytes) {
+    public SimpleMetadataImpl(String name, long sizeBytes) {
         this.name = name;
         this.sizeBytes = sizeBytes;
     }

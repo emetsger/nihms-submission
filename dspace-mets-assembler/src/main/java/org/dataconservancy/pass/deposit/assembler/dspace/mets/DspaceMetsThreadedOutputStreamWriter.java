@@ -16,10 +16,14 @@
 package org.dataconservancy.pass.deposit.assembler.dspace.mets;
 
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
+import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
+import org.apache.commons.io.IOUtils;
 import org.dataconservancy.nihms.assembler.PackageStream;
 import org.dataconservancy.nihms.assembler.nihmsnative.AbstractThreadedOutputStreamWriter;
 import org.springframework.core.io.Resource;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 
@@ -28,14 +32,35 @@ import java.util.List;
  */
 public class DspaceMetsThreadedOutputStreamWriter extends AbstractThreadedOutputStreamWriter {
 
+    private static final String METS_XML = "mets.xml";
+
+    private MetsDomWriter metsWriter;
+
     public DspaceMetsThreadedOutputStreamWriter(String threadName, ArchiveOutputStream archiveOut,
-                                                List<Resource> packageFiles) {
+                                                List<Resource> packageFiles, MetsDomWriter metsWriter) {
         super(threadName, archiveOut, packageFiles);
+        if (metsWriter == null) {
+            throw new IllegalArgumentException("MetsDomWriter must not be null.");
+        }
+        this.metsWriter = metsWriter;
     }
 
     @Override
     public void assembleResources(List<PackageStream.Resource> resources) throws IOException {
         resources.forEach(r -> System.err.println(">>>> Got resource: " + r));
+
+        // this is where we compose and write the METS xml to the ArchiveOutputStream
+
+        resources.forEach(r -> metsWriter.addResource(r));
+
+        ByteArrayOutputStream metsOut = new ByteArrayOutputStream();
+        metsWriter.write(metsOut);
+        ByteArrayInputStream metsIn = new ByteArrayInputStream(metsOut.toByteArray());
+
+        TarArchiveEntry metsEntry = new TarArchiveEntry(METS_XML);
+        metsEntry.setSize(metsOut.size());
+
+        putResource(archiveOut, metsEntry, metsIn);
     }
 
 }

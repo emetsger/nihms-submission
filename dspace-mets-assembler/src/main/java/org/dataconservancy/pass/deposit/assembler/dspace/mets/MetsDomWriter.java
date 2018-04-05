@@ -22,12 +22,14 @@ import au.edu.apsr.mtk.base.FileGrp;
 import au.edu.apsr.mtk.base.FileSec;
 import au.edu.apsr.mtk.base.METS;
 import au.edu.apsr.mtk.base.METSException;
+import au.edu.apsr.mtk.base.METSWrapper;
 import au.edu.apsr.mtk.base.Stream;
 import org.dataconservancy.nihms.assembler.PackageStream;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
 import javax.xml.parsers.DocumentBuilderFactory;
+import java.io.OutputStream;
 import java.util.List;
 import java.util.UUID;
 
@@ -65,6 +67,16 @@ public class MetsDomWriter {
         } catch (Exception e) {
             throw new RuntimeException(e.getMessage(), e);
         }
+    }
+
+    void write(OutputStream out) {
+        METSWrapper wrapper = null;
+        try {
+            wrapper = new METSWrapper(metsDocument);
+        } catch (METSException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
+        wrapper.write(out);
     }
 
     void addResource(PackageStream.Resource resource) {

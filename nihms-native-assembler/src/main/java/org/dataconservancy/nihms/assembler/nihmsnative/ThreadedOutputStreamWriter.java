@@ -48,8 +48,6 @@ import static org.dataconservancy.nihms.assembler.nihmsnative.NihmsPackageStream
 
 class ThreadedOutputStreamWriter extends AbstractThreadedOutputStreamWriter {
 
-    private static final int THIRTY_TWO_KIB = 32 * 2 ^ 10;
-
     private static final Logger LOG = LoggerFactory.getLogger(ThreadedOutputStreamWriter.class);
 
     private StreamingSerializer manifestSerializer;
@@ -70,15 +68,6 @@ class ThreadedOutputStreamWriter extends AbstractThreadedOutputStreamWriter {
         putResource(archiveOut, manifestEntry, updateLength(manifestEntry, manifestSerializer.serialize()));
         putResource(archiveOut, metadataEntry, updateLength(metadataEntry, metadataSerializer.serialize()));
         debugResources(resources);
-    }
-
-    private InputStream updateLength(TarArchiveEntry entry, InputStream toSize) throws IOException {
-        org.apache.commons.io.output.ByteArrayOutputStream baos =
-                new org.apache.commons.io.output.ByteArrayOutputStream(THIRTY_TWO_KIB);
-        IOUtils.copy(toSize, baos);
-        entry.setSize(baos.size());
-        LOG.debug("Updating tar entry {} size to {}", entry.getName(), baos.size());
-        return new ByteArrayInputStream(baos.toByteArray());
     }
 
     private void debugResources(List<PackageStream.Resource> resources) {
