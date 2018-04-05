@@ -46,118 +46,29 @@ import static org.dataconservancy.nihms.assembler.nihmsnative.NihmsPackageStream
 import static org.dataconservancy.nihms.assembler.nihmsnative.NihmsPackageStream.MANIFEST_ENTRY_NAME;
 import static org.dataconservancy.nihms.assembler.nihmsnative.NihmsPackageStream.METADATA_ENTRY_NAME;
 
-class ThreadedOutputStreamWriter extends Thread {
+class ThreadedOutputStreamWriter extends AbstractThreadedOutputStreamWriter {
 
     private static final int THIRTY_TWO_KIB = 32 * 2 ^ 10;
 
     private static final Logger LOG = LoggerFactory.getLogger(ThreadedOutputStreamWriter.class);
 
-    private ArchiveOutputStream archiveOut;
-
-    private List<Resource> packageFiles;
-
     private StreamingSerializer manifestSerializer;
 
     private StreamingSerializer metadataSerializer;
 
-    private CloseOutputstreamCallback closeStreamHandler;
-
     public ThreadedOutputStreamWriter(String threadName, ArchiveOutputStream archiveOut, List<Resource> packageFiles,
                                       StreamingSerializer manifestSerializer, StreamingSerializer metadataSerializer) {
-        super(threadName);
-        this.archiveOut = archiveOut;
-        this.packageFiles = packageFiles;
+        super(threadName, archiveOut, packageFiles);
         this.manifestSerializer = manifestSerializer;
         this.metadataSerializer = metadataSerializer;
     }
 
     @Override
-    public void run() {
-        List<PackageStream.Resource> assembledResources = new ArrayList<>();
-
-        try {
-            // prepare a tar entry for each file in the archive
-
-            // (1) need to know the name of each file going into the tar
-            // (2) the size of each file going into the tar?
-
-            TarArchiveEntry manifestEntry = new TarArchiveEntry(MANIFEST_ENTRY_NAME);
-
-            TarArchiveEntry metadataEntry = new TarArchiveEntry(METADATA_ENTRY_NAME);
-            putResource(archiveOut, manifestEntry, updateLength(manifestEntry, manifestSerializer.serialize()));
-            putResource(archiveOut, metadataEntry, updateLength(metadataEntry, metadataSerializer.serialize()));
-            ResourceBuilderImpl rb = new ResourceBuilderImpl();
-            packageFiles.forEach(resource -> {
-                try (InputStream resourceIn = resource.getInputStream();
-                     ObservableInputStream observableIn = new ObservableInputStream(resourceIn)) {
-
-                    DefaultDetector detector = new DefaultDetector();
-                    MediaType mimeType = detector.detect(resourceIn, new Metadata());
-                    rb.mimeType(mimeType.toString());
-
-                    ContentLengthObserver clObs = new ContentLengthObserver(rb);
-                    DigestObserver md5Obs = new DigestObserver(rb, PackageStream.Algo.MD5);
-                    DigestObserver sha256Obs = new DigestObserver(rb, PackageStream.Algo.SHA_256);
-                    observableIn.add(clObs);
-                    observableIn.add(md5Obs);
-                    observableIn.add(sha256Obs);
-
-                    final TarArchiveEntry archiveEntry = new TarArchiveEntry(resource.getFilename());
-                    archiveEntry.setSize(resource.contentLength());
-                    putResource(archiveOut, archiveEntry, observableIn);
-                } catch (IOException e) {
-                    throw new RuntimeException(format(ERR_PUT_RESOURCE, resource.getFilename(), e.getMessage()), e);
-                }
-
-                assembledResources.add(rb.build());
-            });
-
-            // build METS manifest from assembledResources
-            // build NIHMS manifest from assembledResources and NihmsManifest (needed b/c it has the classifier info: manuscript, figure, table, etc.
-            // build NIHMS bulk metadata from NihmsMetadata, Manuscript metadata, Journal metadata, Person metadata, Article metadata
-
-            archiveOut.finish();
-            archiveOut.close();
-        } catch (Exception e) {
-            LOG.info("Exception encountered streaming package, cleaning up by closing the archive output stream: {}",
-                    e.getMessage(), e);
-
-            // special care needs to be taken when exceptions are encountered.  it is essential that the underlying
-            // pipedoutputstream be closed. (1) the archive output stream prevents the underlying output streams from
-            // being closed (2) this class isn't aware of the underlying output streams; there may be multiple of them
-            // so the creator of this instance also supplies a callback which is invoked to close each of the underlying
-            // streams, insuring that the pipedoutputstream is closed.
-            closeStreamHandler.closeAll();
-        }
-    }
-
-    /**
-     * Called when an exception occurs writing to the piped output stream, or after all resources have been successfully
-     * streamed to the piped output stream.
-     *
-     * @return the handler invoked to close output streams when an exception is encountered writing to the piped output
-     * stream
-     */
-    public CloseOutputstreamCallback getCloseStreamHandler() {
-        return closeStreamHandler;
-    }
-
-    /**
-     * Called when an exception occurs writing to the piped output stream, or after all resources have been successfully
-     * streamed to the piped output stream.
-     *
-     * @param callback the handler invoked to close output streams when an exception is encountered writing to the piped
-     * output stream
-     */
-    public void setCloseStreamHandler(CloseOutputstreamCallback callback) {
-        this.closeStreamHandler = callback;
-    }
-
-    private void putResource(ArchiveOutputStream archiveOut, ArchiveEntry archiveEntry, InputStream inputStream)
-            throws IOException {
-        archiveOut.putArchiveEntry(archiveEntry);
-        IOUtils.copy(inputStream, archiveOut);
-        archiveOut.closeArchiveEntry();
+    public void assembleResources(List<PackageStream.Resource> resources) throws IOException {
+        TarArchiveEntry manifestEntry = new TarArchiveEntry(MANIFEST_ENTRY_NAME);
+        TarArchiveEntry metadataEntry = new TarArchiveEntry(METADATA_ENTRY_NAME);
+        putResource(archiveOut, manifestEntry, updateLength(manifestEntry, manifestSerializer.serialize()));
+        putResource(archiveOut, metadataEntry, updateLength(metadataEntry, metadataSerializer.serialize()));
     }
 
     private InputStream updateLength(TarArchiveEntry entry, InputStream toSize) throws IOException {
@@ -167,10 +78,6 @@ class ThreadedOutputStreamWriter extends Thread {
         entry.setSize(baos.size());
         LOG.debug("Updating tar entry {} size to {}", entry.getName(), baos.size());
         return new ByteArrayInputStream(baos.toByteArray());
-    }
-
-    interface CloseOutputstreamCallback {
-        void closeAll();
     }
 
 }
