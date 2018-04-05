@@ -87,6 +87,7 @@
         <xstream.version>1.4.10</xstream.version>
         <commons-codec.version>1.11</commons-codec.version>
         <mets-api.version>1.3.0</mets-api.version>
+        <tika.version>1.17</tika.version>
     </properties>
 
     <build>
@@ -295,6 +296,12 @@
                 <groupId>org.dataconservancy.pass</groupId>
                 <artifactId>mets-api</artifactId>
                 <version>${mets-api.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.tika</groupId>
+                <artifactId>tika-core</artifactId>
+                <version>${tika.version}</version>
             </dependency>
 
         </dependencies>
