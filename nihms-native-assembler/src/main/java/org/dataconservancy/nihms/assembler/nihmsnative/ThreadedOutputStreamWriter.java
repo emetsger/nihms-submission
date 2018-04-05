@@ -20,6 +20,15 @@ import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.input.ContentLengthObserver;
+import org.apache.commons.io.input.DigestObserver;
+import org.apache.commons.io.input.MessageDigestCalculatingInputStream;
+import org.apache.commons.io.input.ObservableInputStream;
+import org.apache.tika.detect.DefaultDetector;
+import org.apache.tika.metadata.Metadata;
+import org.apache.tika.mime.MediaType;
+import org.dataconservancy.nihms.assembler.PackageStream;
+import org.dataconservancy.nihms.assembler.ResourceStreamCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
@@ -27,6 +36,9 @@ import org.springframework.core.io.Resource;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.MessageDigest;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import static java.lang.String.format;
@@ -61,6 +73,8 @@ class ThreadedOutputStreamWriter extends Thread {
 
     @Override
     public void run() {
+        List<PackageStream.Resource> assembledResources = new ArrayList<>();
+
         try {
             // prepare a tar entry for each file in the archive
 
@@ -72,15 +86,36 @@ class ThreadedOutputStreamWriter extends Thread {
             TarArchiveEntry metadataEntry = new TarArchiveEntry(METADATA_ENTRY_NAME);
             putResource(archiveOut, manifestEntry, updateLength(manifestEntry, manifestSerializer.serialize()));
             putResource(archiveOut, metadataEntry, updateLength(metadataEntry, metadataSerializer.serialize()));
+            ResourceBuilderImpl rb = new ResourceBuilderImpl();
             packageFiles.forEach(resource -> {
-                try {
+                try (InputStream resourceIn = resource.getInputStream();
+                     ObservableInputStream observableIn = new ObservableInputStream(resourceIn)) {
+
+                    DefaultDetector detector = new DefaultDetector();
+                    MediaType mimeType = detector.detect(resourceIn, new Metadata());
+                    rb.mimeType(mimeType.toString());
+
+                    ContentLengthObserver clObs = new ContentLengthObserver(rb);
+                    DigestObserver md5Obs = new DigestObserver(rb, PackageStream.Algo.MD5);
+                    DigestObserver sha256Obs = new DigestObserver(rb, PackageStream.Algo.SHA_256);
+                    observableIn.add(clObs);
+                    observableIn.add(md5Obs);
+                    observableIn.add(sha256Obs);
+
                     final TarArchiveEntry archiveEntry = new TarArchiveEntry(resource.getFilename());
                     archiveEntry.setSize(resource.contentLength());
-                    putResource(archiveOut, archiveEntry, resource.getInputStream());
+                    putResource(archiveOut, archiveEntry, observableIn);
                 } catch (IOException e) {
                     throw new RuntimeException(format(ERR_PUT_RESOURCE, resource.getFilename(), e.getMessage()), e);
                 }
+
+                assembledResources.add(rb.build());
             });
+
+            // build METS manifest from assembledResources
+            // build NIHMS manifest from assembledResources and NihmsManifest (needed b/c it has the classifier info: manuscript, figure, table, etc.
+            // build NIHMS bulk metadata from NihmsMetadata, Manuscript metadata, Journal metadata, Person metadata, Article metadata
+
             archiveOut.finish();
             archiveOut.close();
         } catch (Exception e) {
@@ -107,6 +142,13 @@ class ThreadedOutputStreamWriter extends Thread {
         return closeStreamHandler;
     }
 
+    /**
+     * Called when an exception occurs writing to the piped output stream, or after all resources have been successfully
+     * streamed to the piped output stream.
+     *
+     * @param callback the handler invoked to close output streams when an exception is encountered writing to the piped
+     * output stream
+     */
     public void setCloseStreamHandler(CloseOutputstreamCallback callback) {
         this.closeStreamHandler = callback;
     }
@@ -130,6 +172,5 @@ class ThreadedOutputStreamWriter extends Thread {
     interface CloseOutputstreamCallback {
         void closeAll();
     }
-
 
 }

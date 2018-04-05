@@ -18,6 +18,7 @@ package org.dataconservancy.nihms.assembler.nihmsnative;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
 import org.dataconservancy.nihms.assembler.PackageStream;
+import org.dataconservancy.nihms.assembler.ResourceStreamCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +26,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.zip.GZIPOutputStream;
@@ -52,6 +54,8 @@ public class NihmsPackageStream implements PackageStream {
     private List<org.springframework.core.io.Resource> packageFiles;
 
     private Metadata metadata;
+
+    private List<ResourceStreamCallback> assemblyCallbacks = Collections.emptyList();
 
     public NihmsPackageStream(StreamingSerializer manifestSerializer, StreamingSerializer metadataSerializer,
                               List<org.springframework.core.io.Resource> packageFiles, Metadata metadata) {
@@ -139,5 +143,11 @@ public class NihmsPackageStream implements PackageStream {
         throw new UnsupportedOperationException();
     }
 
+    public List<ResourceStreamCallback> getAssemblyCallbacks() {
+        return assemblyCallbacks;
+    }
 
+    public void setAssemblyCallbacks(List<ResourceStreamCallback> assemblyCallbacks) {
+        this.assemblyCallbacks = assemblyCallbacks;
+    }
 }
