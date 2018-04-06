@@ -56,5 +56,14 @@ public class ChecksumImpl implements PackageStream.Checksum {
     public String asHex() {
         return hex;
     }
-    
+
+    @Override
+    public String toString() {
+        return "ChecksumImpl{" +
+                "algorithm=" + algorithm +
+                ", value=[binary value not shown]" +
+                ", base64='" + base64 + '\'' +
+                ", hex='" + hex + '\'' +
+                '}';
+    }
 }
