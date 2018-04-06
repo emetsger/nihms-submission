@@ -17,8 +17,10 @@
 package org.dataconservancy.pass.deposit.assembler.dspace.mets;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.dataconservancy.nihms.assembler.MetadataBuilder;
 import org.dataconservancy.nihms.assembler.nihmsnative.AbstractPackageStream;
 import org.dataconservancy.nihms.assembler.nihmsnative.AbstractThreadedOutputStreamWriter;
+import org.dataconservancy.nihms.assembler.nihmsnative.ResourceBuilderFactory;
 
 import java.util.List;
 
@@ -26,9 +28,8 @@ public class DspaceMetsPackageStream extends AbstractPackageStream {
 
     private MetsDomWriter metsWriter;
 
-    public DspaceMetsPackageStream(List<org.springframework.core.io.Resource> packageFiles, Metadata metadata,
-                                   MetsDomWriter metsWriter) {
-        super(packageFiles, metadata);
+    public DspaceMetsPackageStream(List<org.springframework.core.io.Resource> custodialResources, MetadataBuilder metadataBuilder, ResourceBuilderFactory rbf, MetsDomWriter metsWriter) {
+        super(custodialResources, metadataBuilder, rbf);
         if (metsWriter == null) {
             throw new IllegalArgumentException("METS writer must not be null.");
         }
@@ -36,8 +37,8 @@ public class DspaceMetsPackageStream extends AbstractPackageStream {
     }
 
     @Override
-    public AbstractThreadedOutputStreamWriter getStreamWriter(TarArchiveOutputStream tarArchiveOutputStream) {
+    public AbstractThreadedOutputStreamWriter getStreamWriter(TarArchiveOutputStream tarArchiveOutputStream, ResourceBuilderFactory rbf) {
         return new DspaceMetsThreadedOutputStreamWriter("DSpace Archive Writer", tarArchiveOutputStream,
-                packageFiles, metsWriter);
+                custodialContent, metsWriter);
     }
 }
