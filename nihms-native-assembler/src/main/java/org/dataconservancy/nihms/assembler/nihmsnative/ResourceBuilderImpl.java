@@ -67,4 +67,8 @@ public class ResourceBuilderImpl implements ResourceBuilder {
             this.resource = new ResourceImpl();
         }
     }
+
+    public void reset() {
+        this.resource = null;
+    }
 }
