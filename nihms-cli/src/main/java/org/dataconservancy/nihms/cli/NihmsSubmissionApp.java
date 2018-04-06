@@ -16,7 +16,11 @@
 package org.dataconservancy.nihms.cli;
 
 import org.apache.commons.codec.binary.Base64InputStream;
+import org.dataconservancy.nihms.assembler.nihmsnative.DefaultMetadataBuilderFactory;
+import org.dataconservancy.nihms.assembler.nihmsnative.DefaultResourceBuilderFactory;
 import org.dataconservancy.nihms.assembler.nihmsnative.NihmsAssembler;
+import org.dataconservancy.nihms.assembler.nihmsnative.NihmsManifestSerializer;
+import org.dataconservancy.nihms.assembler.nihmsnative.NihmsMetadataSerializer;
 import org.dataconservancy.nihms.builder.fs.FilesystemModelBuilder;
 import org.dataconservancy.nihms.submission.SubmissionEngine;
 import org.dataconservancy.nihms.transport.ftp.DefaultFtpClientFactory;
@@ -95,7 +99,7 @@ public class NihmsSubmissionApp {
         try {
             SubmissionEngine engine = new SubmissionEngine(
                     new FilesystemModelBuilder(),
-                    new NihmsAssembler(),
+                    new NihmsAssembler(new DefaultMetadataBuilderFactory(), new DefaultResourceBuilderFactory()),
                     new FtpTransport(new DefaultFtpClientFactory()));
 
             // Prefer the use of the Map<String, String> transport hints.  If they aren't available, use the
