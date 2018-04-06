@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.dataconservancy.nihms.assembler;
 
-/**
- * @author Elliot Metsger (emetsger@jhu.edu)
- */
-public interface ResourceStreamCallback {
+package org.dataconservancy.nihms.assembler.nihmsnative;
 
-    void assembleResource(ResourceBuilder builder);
+import org.dataconservancy.nihms.assembler.MetadataBuilder;
+
+public interface MetadataBuilderFactory {
+
+    MetadataBuilder newInstance();
 
 }

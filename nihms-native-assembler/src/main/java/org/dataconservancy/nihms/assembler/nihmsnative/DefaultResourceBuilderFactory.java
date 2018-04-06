@@ -13,27 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.dataconservancy.nihms.assembler;
 
-import java.io.FilterInputStream;
-import java.io.InputStream;
+package org.dataconservancy.nihms.assembler.nihmsnative;
 
-/**
- * @author Elliot Metsger (emetsger@jhu.edu)
- */
-public abstract class ResourceStream extends FilterInputStream {
+import org.dataconservancy.nihms.assembler.ResourceBuilder;
 
-    private ResourceStreamCallback callback;
+public class DefaultResourceBuilderFactory implements ResourceBuilderFactory {
 
-    public ResourceStream(InputStream in) {
-        super(in);
+    @Override
+    public ResourceBuilder newInstance() {
+        return new ResourceBuilderImpl();
     }
 
-    public ResourceStreamCallback getCallback() {
-        return callback;
-    }
-
-    public void setCallback(ResourceStreamCallback callback) {
-        this.callback = callback;
-    }
 }
