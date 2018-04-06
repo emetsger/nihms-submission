@@ -41,7 +41,7 @@ public class NihmsMetadataSerializer implements StreamingSerializer{
 
     private NihmsMetadata metadata;
 
-    NihmsMetadataSerializer(NihmsMetadata metadata){
+    public NihmsMetadataSerializer(NihmsMetadata metadata){
         this.metadata = metadata;
     }
 

@@ -42,7 +42,7 @@ public class NihmsManifestSerializer implements StreamingSerializer{
 
     private NihmsManifest manifest;
 
-    NihmsManifestSerializer(NihmsManifest manifest){
+    public NihmsManifestSerializer(NihmsManifest manifest){
         this.manifest = manifest;
     }
 
