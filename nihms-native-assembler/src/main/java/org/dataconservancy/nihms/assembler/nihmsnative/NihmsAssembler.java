@@ -18,25 +18,20 @@ package org.dataconservancy.nihms.assembler.nihmsnative;
 
 import org.dataconservancy.nihms.assembler.MetadataBuilder;
 import org.dataconservancy.nihms.assembler.PackageStream;
+import org.dataconservancy.nihms.model.NihmsSubmission;
 import org.springframework.core.io.Resource;
 
 import java.util.List;
 
 public class NihmsAssembler extends AbstractAssembler {
 
-    private StreamingSerializer metadataSerializer;
-
-    private StreamingSerializer manifestSerializer;
-
-    public NihmsAssembler(MetadataBuilderFactory mbf, ResourceBuilderFactory rbf, StreamingSerializer metadataSerializer, StreamingSerializer manifestSerializer) {
+    public NihmsAssembler(MetadataBuilderFactory mbf, ResourceBuilderFactory rbf) {
         super(mbf, rbf);
-        this.metadataSerializer = metadataSerializer;
-        this.manifestSerializer = manifestSerializer;
     }
 
     @Override
-    protected PackageStream createPackageStream(List<Resource> custodialResources, MetadataBuilder mb, ResourceBuilderFactory rbf) {
-        return new NihmsPackageStream(manifestSerializer, metadataSerializer, custodialResources, mb, rbf);
+    protected PackageStream createPackageStream(NihmsSubmission submission, List<Resource> custodialResources, MetadataBuilder mb, ResourceBuilderFactory rbf) {
+        return new NihmsPackageStream(new NihmsManifestSerializer(submission.getManifest()), new NihmsMetadataSerializer(submission.getMetadata()), custodialResources, mb, rbf);
     }
 
 }

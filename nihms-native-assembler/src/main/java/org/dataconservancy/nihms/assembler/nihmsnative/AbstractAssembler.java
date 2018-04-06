@@ -68,10 +68,10 @@ public abstract class AbstractAssembler implements Assembler {
 
         List<Resource> custodialResources = resolveCustodialResources(submission.getFiles());
 
-        return createPackageStream(custodialResources, metadataBuilder, rbf);
+        return createPackageStream(submission, custodialResources, metadataBuilder, rbf);
     }
 
-    protected abstract PackageStream createPackageStream(List<Resource> custodialResources, MetadataBuilder mdb, ResourceBuilderFactory rbf);
+    protected abstract PackageStream createPackageStream(NihmsSubmission submission, List<Resource> custodialResources, MetadataBuilder mdb, ResourceBuilderFactory rbf);
 
     protected List<Resource> resolveCustodialResources(List<NihmsFile> files) {
         // Locate byte streams containing uploaded manuscript and any supplemental data
