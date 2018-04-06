@@ -16,33 +16,16 @@
 
 package org.dataconservancy.nihms.assembler.nihmsnative;
 
-import org.apache.commons.compress.archivers.ArchiveEntry;
 import org.apache.commons.compress.archivers.ArchiveOutputStream;
 import org.apache.commons.compress.archivers.tar.TarArchiveEntry;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.input.ContentLengthObserver;
-import org.apache.commons.io.input.DigestObserver;
-import org.apache.commons.io.input.MessageDigestCalculatingInputStream;
-import org.apache.commons.io.input.ObservableInputStream;
-import org.apache.tika.detect.DefaultDetector;
-import org.apache.tika.metadata.Metadata;
-import org.apache.tika.mime.MediaType;
 import org.dataconservancy.nihms.assembler.PackageStream;
-import org.dataconservancy.nihms.assembler.ResourceStreamCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.security.MessageDigest;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
-import static java.lang.String.format;
-import static org.dataconservancy.nihms.assembler.nihmsnative.NihmsPackageStream.ERR_PUT_RESOURCE;
 import static org.dataconservancy.nihms.assembler.nihmsnative.NihmsPackageStream.MANIFEST_ENTRY_NAME;
 import static org.dataconservancy.nihms.assembler.nihmsnative.NihmsPackageStream.METADATA_ENTRY_NAME;
 
