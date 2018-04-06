@@ -18,8 +18,8 @@ package org.dataconservancy.nihms.assembler.nihmsnative;
 
 import org.dataconservancy.nihms.assembler.PackageStream;
 
+import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 
 /**
@@ -46,7 +46,7 @@ public class SimpleMetadataImpl implements PackageStream.Metadata {
 
     private PackageStream.ARCHIVE archive = PackageStream.ARCHIVE.TAR;
 
-    private List<PackageStream.Checksum> checksums = Collections.EMPTY_LIST;
+    private List<PackageStream.Checksum> checksums = new ArrayList<>(1);
 
     public SimpleMetadataImpl() {
 
@@ -177,5 +177,9 @@ public class SimpleMetadataImpl implements PackageStream.Metadata {
 
     void setArchive(PackageStream.ARCHIVE archive) {
         this.archive = archive;
+    }
+
+    void addChecksum(PackageStream.Checksum checksum) {
+        checksums.add(checksum);
     }
 }
