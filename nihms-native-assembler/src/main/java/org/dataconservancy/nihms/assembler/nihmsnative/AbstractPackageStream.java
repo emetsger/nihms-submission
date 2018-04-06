@@ -17,6 +17,7 @@
 package org.dataconservancy.nihms.assembler.nihmsnative;
 
 import org.apache.commons.compress.archivers.tar.TarArchiveOutputStream;
+import org.dataconservancy.nihms.assembler.MetadataBuilder;
 import org.dataconservancy.nihms.assembler.PackageStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,14 +40,17 @@ public abstract class AbstractPackageStream implements PackageStream {
 
     protected static final String ERR_CREATING_ARCHIVE_STREAM = "Error creating a %s archive output stream: %s";
 
-    protected List<org.springframework.core.io.Resource> packageFiles;
+    protected List<org.springframework.core.io.Resource> custodialContent;
 
-    protected PackageStream.Metadata metadata;
+    private MetadataBuilder metadataBuilder;
 
-    public AbstractPackageStream(List<org.springframework.core.io.Resource> packageFiles,
-                                 PackageStream.Metadata metadata) {
-        this.packageFiles = packageFiles;
-        this.metadata = metadata;
+    private ResourceBuilderFactory rbf;
+
+    public AbstractPackageStream(List<org.springframework.core.io.Resource> custodialContent,
+                                 MetadataBuilder metadataBuilder, ResourceBuilderFactory rbf) {
+        this.custodialContent = custodialContent;
+        this.metadataBuilder = metadataBuilder;
+        this.rbf = rbf;
     }
 
     @Override
@@ -74,7 +78,7 @@ public abstract class AbstractPackageStream implements PackageStream {
         // put below in a thread, and start
         // then return pipedIn
 
-        AbstractThreadedOutputStreamWriter streamWriter = getStreamWriter(archiveOut);
+        AbstractThreadedOutputStreamWriter streamWriter = getStreamWriter(archiveOut, rbf);
         streamWriter.setCloseStreamHandler(() -> {
                     try {
                         pipedOut.close();
@@ -113,11 +117,11 @@ public abstract class AbstractPackageStream implements PackageStream {
 
     }
 
-    public abstract AbstractThreadedOutputStreamWriter getStreamWriter(TarArchiveOutputStream tarArchiveOutputStream);
+    public abstract AbstractThreadedOutputStreamWriter getStreamWriter(TarArchiveOutputStream tarArchiveOutputStream, ResourceBuilderFactory rbf);
 
     @Override
     public PackageStream.Metadata metadata() {
-        return metadata;
+        return metadataBuilder.build();
     }
 
     @Override
