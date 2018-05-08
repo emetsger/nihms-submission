@@ -146,6 +146,12 @@
             <scope>test</scope>
         </dependency>
 
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>${okhttp.version}</version>
+        </dependency>
+
     </dependencies>
 
     <build>
@@ -332,7 +338,7 @@
                         <pass.fedora.user>${pass.fedora.user}</pass.fedora.user>
                         <pass.fedora.password>${pass.fedora.password}</pass.fedora.password>
                         <pass.fedora.baseurl>${pass.fedora.baseurl}</pass.fedora.baseurl>
-                        <pass.elasticsearch.url>${pass.elasticsearch.url}}</pass.elasticsearch.url>
+                        <pass.elasticsearch.url>${pass.elasticsearch.url}</pass.elasticsearch.url>
                     </systemProperties>
                 </configuration>
                 <executions>
