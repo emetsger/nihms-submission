@@ -32,10 +32,30 @@ public abstract class BaseIT {
 
     protected static final String DOCKER_HOST_PROPERTY = "docker.host.address";
 
+    protected static final String PASS_FEDORA_USER = "pass.fedora.user";
+
+    protected static final String PASS_FEDORA_PASSWORD = "pass.fedora.password";
+
+    protected static final String PASS_FEDORA_BASEURL = "pass.fedora.baseurl";
+
+    protected static final String PASS_ES_URL = "pass.elasticsearch.url";
+
     @Before
     public void verifyDockerHostProperty() throws Exception {
         assertNotNull("Expected required system property 'docker.host.address' to be set.",
                 System.getProperty("docker.host.address"));
+    }
+
+    @Before
+    public void verifyPassClientProperties() {
+        assertTrue("Missing expected system property " + PASS_FEDORA_USER,
+                System.getProperties().containsKey(PASS_FEDORA_USER));
+        assertTrue("Missing expected system property " + PASS_FEDORA_PASSWORD,
+                System.getProperties().containsKey(PASS_FEDORA_PASSWORD));
+        assertTrue("Missing expected system property " + PASS_FEDORA_BASEURL,
+                System.getProperties().containsKey(PASS_FEDORA_BASEURL));
+        assertTrue("Missing expected system property " + PASS_ES_URL,
+                System.getProperties().containsKey(PASS_ES_URL));
     }
 
     public static <T> void attemptAndVerify(int times, Callable<T> callable, Function<T, Boolean> verification) {
@@ -63,7 +83,17 @@ public abstract class BaseIT {
                 } else {
                     msg.append("!");
                 }
-                assertTrue(msg.toString(), verification.apply(result));
+                Boolean verificationResult = verification.apply(result);
+                if (verificationResult == null) {
+                    try {
+                        Thread.sleep(sleepMs);
+                    } catch (InterruptedException ie) {
+                        Thread.interrupted();
+                        break;
+                    }
+                    continue;
+                }
+                assertTrue(msg.toString(), verificationResult);
                 break;
             } else {
                 try {

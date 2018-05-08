@@ -16,13 +16,23 @@
 
 package org.dataconservancy.pass.deposit.builder.fedora;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import org.dataconservancy.nihms.builder.fs.FcrepoModelBuilder;
 import org.dataconservancy.nihms.builder.fs.PassJsonFedoraAdapter;
+import org.dataconservancy.nihms.integration.BaseIT;
 import org.dataconservancy.nihms.model.DepositSubmission;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import org.dataconservancy.pass.client.PassClient;
+import org.dataconservancy.pass.client.PassClientDefault;
+import org.dataconservancy.pass.model.File;
 import org.dataconservancy.pass.model.Journal;
 import org.dataconservancy.pass.model.PassEntity;
 import org.dataconservancy.pass.model.Publication;
@@ -38,7 +48,7 @@ import java.net.URI;
 import java.net.URL;
 import java.util.HashMap;
 
-public class FcrepoModelBuilderIT {
+public class FcrepoModelBuilderIT extends BaseIT {
 
     private DepositSubmission submission;
     private FcrepoModelBuilder underTest = new FcrepoModelBuilder();
@@ -46,13 +56,53 @@ public class FcrepoModelBuilderIT {
 
     @Before
     public void setup() throws Exception {
+        PassClient passClient = new PassClientDefault();
+
         // Upload sample data to Fedora repository to get its URI.
         PassJsonFedoraAdapter reader = new PassJsonFedoraAdapter();
         URL sampleDataUrl = this.getClass().getResource(SAMPLE_SUBMISSION_RESOURCE);
         InputStream is = new FileInputStream(sampleDataUrl.getPath());
         URI submissionUri = reader.jsonToFcrepo(is);
         is.close();
-        submission = underTest.build(submissionUri.toString());
+
+
+        // wait for files to appear in the index
+        ObjectMapper mapper = new ObjectMapper();
+        long fileCount = mapper.readTree(new FileInputStream(sampleDataUrl.getPath()))
+                .findValuesAsText("@type").stream().filter("File"::equals).count();
+        assertTrue(fileCount > 0);
+        OkHttpClient http = new OkHttpClient();
+        Request esFileQuery = new Request.Builder().url(System.getProperty(PASS_ES_URL) + "_search?q=@type:File").build();
+
+        attemptAndVerify(60, () -> {
+            LOG.debug("Looking for {} files...", fileCount);
+            try (Response res = http.newCall(esFileQuery).execute()) {
+                LOG.debug("Executing request {}", esFileQuery.url().toString());
+                return mapper.readTree(res.body().bytes());
+            }
+        }, (jsonNode) -> {
+            LOG.debug("Evaluating JSON {}", (jsonNode != null) ? jsonNode.asText() : null);
+
+            if (jsonNode == null) {
+                return null;
+            }
+
+            JsonNode hits = jsonNode.findValue("hits");
+            if (hits == null) {
+                LOG.debug("No hits");
+                return null;
+            }
+
+            if (hits.get("total").asInt() == fileCount) {
+                LOG.debug("{} hits, returning true", fileCount);
+                return true;
+            } else {
+                LOG.debug("{} hits, expected {}", hits.get("total").asInt(), fileCount);
+                return null;
+            }
+        } );
+
+        submission = underTest.build(submissionUri.toString()); // this invokes the search
     }
 
     @Test
