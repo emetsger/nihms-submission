@@ -134,6 +134,16 @@ After successfully connecting to the JMS broker and the Fedora repository, depos
 
 Incoming `Deposit` resources will be used to update the overall success or failure of a `Submission`.
 
+#### Retry
+
+Retry mode is used to retry a `Deposit` that has failed.  Retry mode is invoked by starting Deposit services with `retry` as the first command-line argument, with an optional `--uris` argument, accepting a space-separated list of `Deposit` URIs to retry.  If no `--uris` argument is present, the index is searched for _all_ `Deposit` resources that have failed, and those are the deposits that are re-tried.
+
+To retry all failed deposits:
+> $ java -jar deposit-services.jar retry
+
+To retry specific deposits:
+> $ java -jar deposit-services.jar retry --uris http://192.168.99.100:8080/fcrepo/rest/deposits/8e/af/ac/a9/8eafaca9-1f24-413a-bf1e-fbbd673ba45b http://192.168.99.100:8080/fcrepo/rest/deposits/4a/cb/04/bb/4acb04bb-4f79-40ef-8ff9-e105261aa7fb
+
 ### Future modes
 
 Modes to be supported by future releases of Deposit Services.
