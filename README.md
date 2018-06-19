@@ -4,9 +4,6 @@ Deposit Services are responsible for the transfer of custodial content and metad
 
 Deposit Services is deployed as "back-end" infrastructure.  It has no user-facing elements.  In particular, Deposit Services is unaware of the internal/external duality of resource URIs.  This means that when looking at URIs in Deposit Services' logging output, some adjustment may be necessary for a developer or systems operator to retrieve the resource from their location in the network topology. 
 
-
- 
-
 ## Configuration
 
 The primary mechanism for configuring Deposit Services is through environment variables.  This aligns with the patterns used in development and production infrastructure which rely on Docker and its approach to runtime configuration.  Deposit Services relies on _existing_ variables common to the PASS infrastructure, and defines its own application-specific variables.
@@ -101,6 +98,10 @@ A production deployment of Deposit Services is likely to provide updated values 
 
 To create your own configuration, copy and paste the default configuration into an empty file and modify the key values as described above.  The configuration _must_ be referenced by the `pass.deposit.transport.configuration` property, or is environment equivalent `PASS_DEPOSIT_TRANSPORT_CONFIGURATION`.  Allowed values are any Spring Resource path (e.g. `classpath:/`, `classpath*:`, `file:`, `http://`, `https://`).  For example, if your configuration is stored as a file in `/etc/deposit-services.cfg`, then you would set the environment variable `PASS_DEPOSIT_TRANSPORT_CONFIGURATION=file:/etc/deposit-services.cfg` prior to starting Deposit Services.  Likewise, if you kept the configuration accessible at a URL, you could use `PASS_DEPOSIT_TRANSPORT_CONFIGURATION=http://example.org/deposit-services.cfg`.
 
+## Handling of failed Submissions and Deposits
+
+
+
 ## Build and Deployment
 
 Deposit Services' primary artifact is a single self-executing jar.  The behavior, or "mode" of the deposit services application is directed by command line arguments and influenced by environment variables.  In the PASS infrastructure, the Deposit Services self-executing jar is deployed inside of a simple Docker container.
@@ -110,11 +111,11 @@ Deposit Services can be built by running:
 
 The main Deposit Services deployment artifact is found in `deposit-messaging/target/deposit-messaging-<version>.jar`.  It is this jarfile that is included in the Docker image for Deposit Services, and posted on the GitHub Release  page.
 
-### Supported modes
+## Supported modes
 
 The mode is a required command-line argument which directs the deposit services application to take a specific action.
 
-#### Listen
+### Listen
 
 Listen mode is the "primary" mode, if you will, of Deposit Services.  In `listen` mode Deposit Services responds to JMS messages from the Fedora repository by creating and transferring packages of custodial content to remote repositories. 
 
@@ -122,7 +123,7 @@ Listen mode is invoked by starting Deposit services with `listen` as the single 
 
 > $ java -jar deposit-services.jar listen
 
-Deposit Services will connect to a JMS broker specified by the environment variables `FCREPO_HOST` and `FCREPO_JMS_PORT`, and wait for the Fedora repository to be available as specified by `FCREPO_PORT`.  Notably, `listen` mode does not use the index.
+Deposit Services will connect to a JMS broker specified by the `SPRING_ACTIVEMQ_BROKER_URL` environment variable (optionally authenticating if `SPRING_ACTIVEMQ_USER` and `SPRING_ACTIVEMQ_PASSWORD` are present), and wait for the Fedora repository to be available as specified by `FCREPO_HOST` and `FCREPO_PORT`.  Notably, `listen` mode does not use the index.
 
 > If the Fedora repository is deployed under a webapp context other than `/fcrepo`, the environment variable `PASS_FEDORA_BASEURL` must be set to the base of the Fedora REST API (e.g. `PASS_FEDORA_BASEURL=http://fcrepo:8080/fcrepo/rest`)
 
@@ -134,7 +135,7 @@ After successfully connecting to the JMS broker and the Fedora repository, depos
 
 Incoming `Deposit` resources will be used to update the overall success or failure of a `Submission`.
 
-#### Retry
+### Retry
 
 Retry mode is used to retry a `Deposit` that has failed.  Retry mode is invoked by starting Deposit services with `retry` as the first command-line argument, with an optional `--uris` argument, accepting a space-separated list of `Deposit` URIs to retry.  If no `--uris` argument is present, the index is searched for _all_ `Deposit` resources that have failed, and those are the deposits that are re-tried.
 
@@ -162,13 +163,19 @@ Deposit Services is implemented using Spring Boot, which heavily relies on Sprin
 
 The entrypoint into the deposit services is the `DepositApp`, which accepts command line parameters that set the "mode" of the deposit services runtime.  Spring beans are created entirely in Java code by the `DepositConfig`  and `JmsConfig` classes.
 
-## Listen mode
+## Runners
+
+### ListenerRunner
 
 The `listen` argument will invoke the `ListenerRunner`, which waits for the Fedora repository to be available, otherwise it shuts down the application.  Two JMS listeners are started that listen to the `submission` and `deposit` queues.  The `submission` queue provides messages relating to `Submission` resources, and the `deposit` queue provides messages relating to `Deposit` resources.  Deposit Services does not listen or act on messages for other types of repository resources.
 
 The `PASS_FEDORA_USERNAME` and `PASS_FEDORA_PASSWORD` define the username and password used to perform HTTP `Basic` authentication to the Fedora HTTP REST API (i.e. `PASS_FEDORA_BASEURL`).
 
-### Message flow and concurrency
+### FailedDepositRunner
+
+The `retry` argument invokes the `FailedDepositRunner` which will re-submit failed `Deposit` resources to the task queue for processing.  URIs for specific Deposits may be specified, otherwise the index is searched for failed Deposits, and each one will be re-tried. 
+
+## Message flow and concurrency
 
 Each JMS listener (one each for the `deposit` and `submission` queues) can process messages concurrently.  The number of messages each listener can process concurrently is set by the property `spring.jms.listener.concurrency` (or its environment equivalent: `SPRING_JMS_LISTENER_CONCURRENCY`).
 
@@ -176,7 +183,9 @@ The `submission` queue is processed by the `JmsSubmissionProcessor`,which resolv
 
 There is a thread pool of so-called "deposit workers" that perform the actual packaging and transport of custodial content to downstream repositories.  The size of the worker pool is determined by the property `pass.deposit.workers.concurrency` (or its environment equivalent: `PASS_DEPOSIT_WORKERS_CONCURRENCY`).  The deposit worker pool accepts instances of `DepositTask`, which contains the primary logic for packaging, streaming, and verifying the transfer of content from the PASS repository to downstream repositories.  The `DepositTask` will determine whether or not the transfer of custodial content has succeed, failed, or is indeterminable (i.e. an asyc deposit process that has not yet concluded).  The status of the `Deposit` resource associated with the `Submission` will be updated accordingly.  
 
-#### CriticalRepositoryInteraction
+## Common Abstractions
+
+### CriticalRepositoryInteraction
 
 A central, yet awkwardly-named, abstraction is `CriticalRepositoryInteraction`.  This interface is used to prevent interleaved updates of individual repository resources by different threads.  A `CriticalRepositoryInteraction` (`CRI` for short) isolates the execution of a `Function` on a specific repository resource, and provides the boilerplate (i.e. template) for retrieving and updating the state of the resource.  There are four main components to `CriticalRepositoryInteraction`: the repository resource itself, a _pre-condition_, _post-condition_, and the _critical_ update (i.e. the `Function` to be executed).  The only implementation of `CRI` is the class `CriticalPath`, and the particulars of that implementation are discussed below.
 
@@ -194,7 +203,7 @@ A central, yet awkwardly-named, abstraction is `CriticalRepositoryInteraction`. 
 
 6.  Finally, the _post-condition_ `BiPredicate` is executed.  It accepts the resource as updated and read by step 5, and the object returned by the critical update in step 4.  This determines the logical success or failure of the `CriticalPath`.  Steps 1 through 5 may have executed without error, but the _post-condition_ has final say of the overall success of the `CriticalPath`.  
   
-#### CriticalRepositoryInteraction Example
+### CriticalRepositoryInteraction Example
 
 Here is a real example of a `CRI` in action, used when packaging and depositing custodial content to a downstream repository.
 
