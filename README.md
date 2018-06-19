@@ -36,7 +36,9 @@ The primary mechanism for configuring Deposit Services is through environment va
 |`PASS_DEPOSIT_QUEUE_SUBMISSION_NAME`       |submission                                                                     |the name of the JMS queue that has messages pertaining to `Submission` resources (used by the `JmsSubmissionProcessor`)
 |`PASS_DEPOSIT_QUEUE_DEPOSIT_NAME`          |deposit                                                                        |the name of the JMS queue that has messages pertaining to `Deposit` resources (used by the `JmsDepositProcessor`)
 |`ACTIVEMQ_BROKER_URI`                      |`null`                                                                         |the publicly-supported (i.e. official PASS) variable for configuring the JMS broker URL.  used to compose the `SPRING_ACTIVEMQ_BROKER_URL`
-|`SPRING_ACTIVEMQ_BROKER_URL`               |${activemq.broker.uri:tcp://${fcrepo.host:localhost}:${fcrepo.jms.port:61616}} |the internal variable for configuring the URI of the JMS broker (under normal circumstances, this environment variable should never be set)
+|`SPRING_ACTIVEMQ_BROKER_URL`               |${activemq.broker.uri:tcp://${fcrepo.host:localhost}:${fcrepo.jms.port:61616}} |the internal variable for configuring the URI of the JMS broker
+|`SPRING_ACTIVEMQ_USER`                     |`null`                                                                         |User name to use when authenticating to the broker
+|`SPRING_ACTIVEMQ_PASSWORD`                 |`null`                                                                         |Password to use when authenticating to the broker
 
 > If the Fedora repository is deployed under a webapp context other than `/fcrepo`, the environment variable `PASS_FEDORA_BASEURL` must be set to the base of the Fedora REST API (e.g. `PASS_FEDORA_BASEURL=http://fcrepo:8080/fcrepo/rest`)
 
