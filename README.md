@@ -46,11 +46,11 @@ The primary mechanism for configuring Deposit Services is through environment va
 
 ### Packager (Transport) Configuration
 
-The `Packager` configuration contains the parameters used by the `Packager` for connecting to remote repositories (i.e. "transports").  Deposit Services comes with a default configuration, but a production environment may override the default, and tell Deposit Services the location of the new confguration.
+The Packager (a.k.a. Transport) configuration contains the parameters used for connecting to remote repositories.  Deposit Services comes with a default configuration, but a production environment will want to override the default.  Defaults are overridden by creating a copy of the default configuration, editing it to suit, and setting `PASS_DEPOSIT_TRANSPORT_CONFIGURATION` to point to the new location.
 
 #### Packager configuration format
 
-The format of the configuration file are Java properties, and the keys are prefixed by well-known values.  Each remote repository will have a prefix for its keys.  The _default_ configuration of Deposit Services is listed below.  There are two repositories supported, the NIH FTP server and the JScholarship DSpace instance.  Each repository has a unique prefix: `transport.nihms.deposit.transport` for the NIH, and `transport.js.deposit.transport` for DSpace:
+The format of the configuration file are Java properties, and the keys are prefixed by well-known values.  Each remote repository will have a prefix for its keys.  There are two repositories supported, the NIH FTP server and the JScholarship DSpace instance: `transport.nihms.deposit.transport` for the NIH, and `transport.js.deposit.transport` for DSpace.  The _default_ configuration of Deposit Services is listed below:
 
         transport.nihms.deposit.transport.authmode=userpass
         transport.nihms.deposit.transport.username=nihmsftpuser
@@ -76,11 +76,10 @@ The format of the configuration file are Java properties, and the keys are prefi
         transport.js.deposit.transport.protocol.swordv2.user-agent-string=pass-deposit/x.y.z 
 
 A few observations of this example configuration:
-* Deposit Services not provide _any_ default values to augment or complement the packager configuration, so when the default configuration is overridden, _all_ values must be represented in the new configuration, even if they remain unchanged from the default.
-* Environment variables / properties are allowed!  This means that a configuration can be parameterized, and environment variables used to provide key values (keys themselves cannot be parameterized with variables).
-* As the keys are well-known to Deposit Services, it is unlikely that the configuration would be overridden without a corresponding code update.
+* When the default configuration is overridden, _all_ values must be represented in the new configuration, even if they remain unchanged from the default.
+* Environment variables / properties are allowed in key values! Environment variables or properties may used to provide key values (keys themselves cannot use variables).
 
-#### Important configuration keys
+#### Important Packager keys
 
 A production deployment of Deposit Services is likely to provide updated values for the following keys:
 > Remember: if the default configuration is overridden, _all_ keys with their values must be in the new configuration, even if their value remains unchanged
