@@ -102,13 +102,23 @@ To create your own configuration, copy and paste the default configuration into 
 
 A "failed" `Deposit` or `Submission` has `Deposit.DepositStatus = FAILED` or `Submission.AggregateDepositStatus = FAILED`.  When a resource has been marked `FAILED`, Deposit Services will ignore any messages relating to the resource when in `listen` mode (see below for more information on modes).  Intervention (automated or manual) is required to update the failed resource.
 
-A resource will be considered as failed when irrecoverable errors occur during the processing of the resource, e.g. when processing a new `Submission`, or performing deposits relating to a `Submission`.
+A resource will be considered as failed when errors occur during the processing of `Submission` and `Deposit` resources.  Some errors may be caused by transient network issues, or a server being rebooted, but for now Deposit Services does not contain any logic for retrying when there are low-level communication errors with an endpoint.
 
 `Submission` resources are failed when:
-1.   
+1.  Failure to build the Deposit Services model for a Submission
+1.  There are no files attached to the Submission
+1.  Any file attached to the Submission is missing a location URI (the URI used to retrieve the bytes of the file).
+1.  An error occurs saving the state of the `Submission` in the repository (arguably a transient error, but DS does not perform any retries when there are errors communicating with the repository)
 
+See `SubmissionProcessor` for details.  Right now, when a `Submission` is failed, manual intervention is required.  Deposit Services does not provide any support for dealing with failed submissions.  It is likely the end-user will need to re-create the submission in the user interface, and resubmit it.
 
+`Deposit` resources are failed when:
+1. An error occurs building a package
+1. An error occurs streaming a package to a `Repository` (arguably transient)
+1. An error occurs polling (arguably transient, but DS does not perform retries) or parsing the status of a `Deposit`
+1. An error occurs saving the state of a `Deposit` in the repository (again, arguably transient, but DS doesn't perform retries when there are errors communicating with the repository)
 
+See `DepositTask` for details.  Deposits fail for transient reasons; a server being down, an interruption in network communication, or invalid credentials for the downstream repository are just a few examples.  Manual intervention is required to remediate failed deposits, but Deposit Services provides support for this case (see the `retry` mode documented below).
 
 ## Build and Deployment
 
@@ -191,7 +201,17 @@ The `submission` queue is processed by the `JmsSubmissionProcessor`,which resolv
 
 There is a thread pool of so-called "deposit workers" that perform the actual packaging and transport of custodial content to downstream repositories.  The size of the worker pool is determined by the property `pass.deposit.workers.concurrency` (or its environment equivalent: `PASS_DEPOSIT_WORKERS_CONCURRENCY`).  The deposit worker pool accepts instances of `DepositTask`, which contains the primary logic for packaging, streaming, and verifying the transfer of content from the PASS repository to downstream repositories.  The `DepositTask` will determine whether or not the transfer of custodial content has succeed, failed, or is indeterminable (i.e. an asyc deposit process that has not yet concluded).  The status of the `Deposit` resource associated with the `Submission` will be updated accordingly.  
 
-## Common Abstractions
+## Common Abstractions and Patterns
+
+### Failure Handling
+
+Certain Spring sub-systems like Spring MVC, or Spring Messaging, support the notion of a "global" [`ErrorHandler`][2].  Deposit services provides an implementation **`DepositServicesErrorHandler`**, and it is used to catch exceptions thrown by the `JmsDepositProcessor`, `JmsSubmissionProcessor`, and is adapted as a [`Thread.UncaughtExceptionHandler`][3] and as a [`RejectedExecutionHandler`][4].
+
+Deposit services provides a `DepositServicesRuntimeException` (`DSRE` for short), which has a field `PassEntity resource`.  If the `DepositServicesErrorHandler` catches a `DSRE` with a non-`null` resource, the error handler will test the type of the resource, mark it as failed, and save it in the repository.
+
+The take-home point is: `Deposit` and `Submission` resources will be marked as failed if a `DepositServicesRuntimeException` is thrown from one of the JMS processors, or from the `DepositTask`.  As a developer, if an exceptional condition does **not** warrant a failure, then do not throw `DepositServicesRuntimeException`.  Instead, consider logging a warning or throwing a `DSRE` with a `null` resource.  Likewise, to fail a resource, all you need to do is throw a `DSRE` with a non-`null` resource.  The `DepositServicesErrorHandler` will do the rest.
+
+Finally, one last word.  Because the state of a resource can be modified at any time by any actor in the PASS infrastructure, the `DepositServicesErrorHandler` encapsulates the act of saving the failed state of a resource within a `CRI`.  A _pre-condition_ for updating the resource is that it must _not_ be in a _terminal_ state.  For example, if the error handler is updating the state from `SUBMITTED` to `FAILED`, but another actor has modified the state of the resource to `REJECTED` in the interim, the _pre-condition_ will fail.  It makes no sense to modify the state of a resource after it is in its _terminal_ state.  The take-home point is: the `DepositServicesErrorHandler` will not mark a resource as failed if it is in a _terminal_ state.
 
 ### CriticalRepositoryInteraction
 
@@ -285,3 +305,6 @@ After the `CriticalPath` executes, its `CriticalResult` can be examined for succ
 
 
 [1]: https://docs.spring.io/spring/docs/5.0.7.RELEASE/spring-framework-reference/core.html#resources-implementations
+[2]: https://docs.spring.io/spring/docs/5.0.7.RELEASE/javadoc-api/org/springframework/util/ErrorHandler.html
+[3]: https://docs.oracle.com/javase/8/docs/api/java/lang/Thread.UncaughtExceptionHandler.html
+[4]: https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/RejectedExecutionHandler.html
