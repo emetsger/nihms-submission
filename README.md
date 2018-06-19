@@ -98,7 +98,15 @@ A production deployment of Deposit Services is likely to provide updated values 
 
 To create your own configuration, copy and paste the default configuration into an empty file and modify the key values as described above.  The configuration _must_ be referenced by the `pass.deposit.transport.configuration` property, or is environment equivalent `PASS_DEPOSIT_TRANSPORT_CONFIGURATION`.  Allowed values are any Spring Resource path (e.g. `classpath:/`, `classpath*:`, `file:`, `http://`, `https://`).  For example, if your configuration is stored as a file in `/etc/deposit-services.cfg`, then you would set the environment variable `PASS_DEPOSIT_TRANSPORT_CONFIGURATION=file:/etc/deposit-services.cfg` prior to starting Deposit Services.  Likewise, if you kept the configuration accessible at a URL, you could use `PASS_DEPOSIT_TRANSPORT_CONFIGURATION=http://example.org/deposit-services.cfg`.
 
-## Handling of failed Submissions and Deposits
+## Failure Handling
+
+A "failed" `Deposit` or `Submission` has `Deposit.DepositStatus = FAILED` or `Submission.AggregateDepositStatus = FAILED`.  When a resource has been marked `FAILED`, Deposit Services will ignore any messages relating to the resource when in `listen` mode (see below for more information on modes).  Intervention (automated or manual) is required to update the failed resource.
+
+A resource will be considered as failed when irrecoverable errors occur during the processing of the resource, e.g. when processing a new `Submission`, or performing deposits relating to a `Submission`.
+
+`Submission` resources are failed when:
+1.   
+
 
 
 
