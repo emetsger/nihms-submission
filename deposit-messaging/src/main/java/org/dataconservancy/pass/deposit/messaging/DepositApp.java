@@ -117,6 +117,7 @@ public class DepositApp {
                 // TODO figure out elegant way to exclude JMS-related beans like SubmissionProcessor from being spun up
                 app.setDefaultProperties(new HashMap<String, Object>() { {
                     put("spring.jms.listener.auto-startup", Boolean.FALSE);
+                    put("pass.deposit.jobs.disabled", Boolean.TRUE);
                 }});
                 break;
             }
@@ -126,6 +127,7 @@ public class DepositApp {
                         .build();
                 app.setDefaultProperties(new HashMap<String, Object>() { {
                     put("spring.jms.listener.auto-startup", Boolean.FALSE);
+                    put("pass.deposit.jobs.disabled", Boolean.TRUE);
                 }});
                 break;
             }
