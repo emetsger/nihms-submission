@@ -58,5 +58,5 @@ WORKDIR /app
 
 ADD ${project.build.directory}/dependency/ .
 
-ENTRYPOINT [ "java", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseCGroupMemoryLimitForHeap", "org.springframework.boot.loader.JarLauncher" ]
+ENTRYPOINT [ "java", "-XX:+UnlockExperimentalVMOptions", "-XX:+UseCGroupMemoryLimitForHeap", "-Djavax.net.debug=ssl,handshake", "-Dedu.jhu.library.pass.deposit.provider.level=TRACE", "org.springframework.boot.loader.JarLauncher" ]
 CMD [ "listen" ]
