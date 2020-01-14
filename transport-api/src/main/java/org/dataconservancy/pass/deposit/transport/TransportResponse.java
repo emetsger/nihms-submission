@@ -19,8 +19,12 @@ package org.dataconservancy.pass.deposit.transport;
 import org.dataconservancy.pass.model.Deposit;
 import org.dataconservancy.pass.model.RepositoryCopy;
 import org.dataconservancy.pass.model.Submission;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public interface TransportResponse {
+
+    Logger LOG = LoggerFactory.getLogger(TransportResponse.class);
 
     /**
      * Whether or not transferring the stream of bytes to the target destination succeeded without error.  If an error
@@ -58,7 +62,8 @@ public interface TransportResponse {
      * @param repositoryCopy
      */
     default void onSuccess(Submission submission, Deposit deposit, RepositoryCopy repositoryCopy) {
-        // no-op
+        LOG.info("Successful deposit for tuple [{} {} {}]",
+                submission.getId(), deposit.getId(), repositoryCopy.getId());
     }
 
 }
